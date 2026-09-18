@@ -5,6 +5,12 @@ des trois classeurs. Aucune exécution réelle n'a été faite (pas d'Excel disp
 environnement) : les points listés ci-dessous sont issus de la lecture du code, pas d'un test
 runtime. À valider en conditions réelles avant correctif.
 
+**Correctifs déjà appliqués** : les 3 liens externes morts de `Visu.xlsm` (§2) ont été retirés
+par édition directe de l'OOXML (validée par re-parsing XML + réouverture openpyxl + comparaison
+cellule à cellule avec l'original) — aucune macro touchée. Le VBA de déduplication/robustesse
+(§3, points 1-2) est fourni prêt à coller dans `VBA_CORRECTIONS.md`, à appliquer et tester
+toi-même dans l'éditeur VBA.
+
 ## 1. Fonctionnement d'ensemble
 
 Outil de suivi de disponibilité/occupation des postes de stationnement avion sur une piste
