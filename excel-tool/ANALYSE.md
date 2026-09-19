@@ -11,6 +11,16 @@ cellule à cellule avec l'original) — aucune macro touchée. Le VBA de dédupl
 (§3, points 1-2) est fourni prêt à coller dans `VBA_CORRECTIONS.md`, à appliquer et tester
 toi-même dans l'éditeur VBA.
 
+**Correctif du 19/09 sur `Visu.xlsm`** : le nettoyage des liens morts avait renuméroté la
+référence externe restante (de `[4]` à `[1]`) dans les formules des cellules, mais pas dans les
+`calculatedColumnFormula` du tableau structuré `Tableau1` (`xl/tables/table1.xml`), qui
+contiennent leur propre copie de ces formules et référençaient encore `[4]` — un index qui
+n'existait plus après suppression des 3 liens morts. Résultat : Excel jugeait le fichier corrompu
+à l'ouverture standalone de `Visu.xlsm` (message « Enregistrements supprimés : Tableau ») et
+supprimait le tableau. Corrigé (32 occurrences), revalidé par un balayage de tout le paquet OOXML
+(feuilles + tables) confirmant qu'aucune formule ne référence plus un index externe inexistant —
+ce que ma validation initiale n'avait pas couvert, d'où le bug passé inaperçu jusqu'à ton test.
+
 **Évolution** : une colonne « Roues » (valeurs 1/2/3, vert/orange/rouge) a été ajoutée dans
 `piste - V3.xlsm` entre DEM VAL et Masquer, sur `Situation` et `Gestion` — détails, choix de
 placement et VBA à coller dans `VBA_CORRECTIONS_ROUES.md`.
