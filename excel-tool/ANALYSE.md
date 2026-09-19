@@ -11,6 +11,10 @@ cellule à cellule avec l'original) — aucune macro touchée. Le VBA de dédupl
 (§3, points 1-2) est fourni prêt à coller dans `VBA_CORRECTIONS.md`, à appliquer et tester
 toi-même dans l'éditeur VBA.
 
+**Évolution** : une colonne « Roues » (valeurs 1/2/3, vert/orange/rouge) a été ajoutée dans
+`piste - V3.xlsm` entre DEM VAL et Masquer, sur `Situation` et `Gestion` — détails, choix de
+placement et VBA à coller dans `VBA_CORRECTIONS_ROUES.md`.
+
 ## 1. Fonctionnement d'ensemble
 
 Outil de suivi de disponibilité/occupation des postes de stationnement avion sur une piste
