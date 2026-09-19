@@ -1,5 +1,32 @@
 # Correctifs VBA à coller — `piste - V3.xlsm`
 
+## Ajout du 19/09 : supprimer l'avertissement « informations personnelles » à l'enregistrement, pour tout le monde
+
+Ce message vient d'un réglage Excel local à chaque poste (Centre de gestion de la
+confidentialité), donc le désactiver là ne vaudrait que pour ton poste. Pour que ça s'applique
+**automatiquement à tout le monde qui ouvre ce fichier**, sans toucher au réglage de chacun, la
+bonne approche est en VBA — via la propriété `Workbook.RemovePersonalInformation`, qui est
+conservée avec le fichier et se comporte comme une commande à réappliquer avant chaque
+enregistrement (`Workbook_BeforeSave` se déclenche à chaque Ctrl+S, bouton, ou `.Save` en VBA) :
+
+Dans **ThisWorkbook**, ajoute cette nouvelle procédure (elle n'existe pas encore, donc pas de
+« avant/après » ici, juste à coller) :
+
+```vba
+Private Sub Workbook_BeforeSave(ByVal SaveAsUI As Boolean, Cancel As Boolean)
+    Me.RemovePersonalInformation = False
+End Sub
+```
+
+Je n'ai pas pu tester ça dans un vrai Excel (juste dans LibreOffice, qui n'a pas ce système
+d'avertissement de confidentialité pour comparer) — c'est une propriété VBA standard et
+documentée, mais je ne peux pas garantir à 100 % qu'elle supprime exactement le message que tu
+vois dans ta version d'Excel. Si le message persiste malgré ce correctif, la solution de repli
+reste le réglage Centre de gestion de la confidentialité (Fichier → Options → Centre de gestion
+de la confidentialité → Paramètres → Options de confidentialité) — mais cette fois-là il faudrait
+le déployer sur chaque poste (ou via une stratégie de groupe si vous êtes en domaine Windows,
+ce que je ne peux pas configurer d'ici).
+
 ## Correctif du 19/09 : Actualiser ne sauvegardait plus piste-V3 (bug de mon refactor)
 
 Si tu as déjà collé la version précédente de ce fichier : **une ligne manque**, ajoute-la. En
