@@ -1,5 +1,113 @@
 # Colonne « Roues » — ce qui a été fait et ce qu'il reste à coller
 
+## Correctif du 19/09 (2) : format Date + mise en forme disparue + liste 1/2/3 ajoutée
+
+Après ton retour (« liste 1/2/3, et j'ai testé 1/2/3, il n'y a pas les mef ») — deux bugs, tous
+les deux de mon fait, trouvés cette fois en testant réellement le fichier avec un moteur tableur
+(LibreOffice, installé et piloté ici pour l'occasion) plutôt qu'en relisant juste le XML :
+
+1. **Les cellules Roues avaient hérité un format « Date »** (`dd/mm/yy;@`) de la colonne GILETS,
+   dont j'avais cloné le style par erreur lors de l'insertion. Résultat : Excel affichait tes 1/2/3
+   comme des dates (« 01/01/00 » etc.) au lieu du chiffre — la case semblait ne rien faire.
+   Corrigé : format remis en « Standard » sur les 25 lignes, dans les deux feuilles, sans toucher
+   au format de GILETS (qui partageait le même style — j'ai dû créer des styles dédiés pour ne
+   pas y toucher).
+2. **La mise en forme conditionnelle (vert/orange/rouge) que j'avais ajoutée avait disparu** du
+   fichier — perdue au fil des réenregistrements Excel successifs. Cause racine trouvée : la
+   macro `MiseEnForme` (qui supprime **toute** la mise en forme de Situation et la reconstruit à
+   chaque ouverture du classeur) ne connaissait pas Roues, donc rien ne la recréait après le
+   nettoyage. Je l'avais mise uniquement dans le fichier, pas dans le VBA — erreur de ma part,
+   il fallait les deux. Recréée dans le fichier ; **il faut aussi l'ajouter dans `MiseEnForme`**
+   (§ ci-dessous) sinon elle redisparaîtra à la prochaine ouverture dans Excel.
+3. **Liste déroulante 1/2/3 ajoutée** sur Roues (comme demandé) — validation de saisie simple,
+   sans toucher à `Paramètre`.
+
+Revalidé cette fois avec un vrai moteur de calcul (pas juste une relecture XML) : ouverture du
+fichier réel, saisie simulée de 1/2/3/4/vide dans Roues, lecture de la règle de mise en forme qui
+matche effectivement et de sa couleur résultante — vert/orange/rouge confirmés, 4 et vide ne
+déclenchent rien. `vbaProject.bin` et la feuille Paramètre confirmés identiques à l'octet près.
+
+### VBA à ajouter dans `MiseEnForme` (Module2) — obligatoire pour que la couleur survive au prochain Workbook_Open
+
+Colle ce bloc juste **avant** les deux dernières lignes de la macro (`Application.ScreenUpdating
+= True` / `Sheets("Situation").Protect`) :
+
+```vba
+    Range("R7:R31").Select
+    Selection.FormatConditions.Add Type:=xlExpression, Formula1:="=$R7=1"
+    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    With Selection.FormatConditions(1).Interior
+        .Pattern = xlPatternLinearGradient
+        .Gradient.Degree = 90
+        .Gradient.ColorStops.Clear
+    End With
+    With Selection.FormatConditions(1).Interior.Gradient.ColorStops.Add(0)
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = 0
+    End With
+    With Selection.FormatConditions(1).Interior.Gradient.ColorStops.Add(0.5)
+        .Color = 5287936
+        .TintAndShade = 0
+    End With
+    With Selection.FormatConditions(1).Interior.Gradient.ColorStops.Add(1)
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions(1).StopIfTrue = False
+
+    Range("R7:R31").Select
+    Selection.FormatConditions.Add Type:=xlExpression, Formula1:="=$R7=2"
+    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    With Selection.FormatConditions(1).Interior
+        .Pattern = xlPatternLinearGradient
+        .Gradient.Degree = 90
+        .Gradient.ColorStops.Clear
+    End With
+    With Selection.FormatConditions(1).Interior.Gradient.ColorStops.Add(0)
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = 0
+    End With
+    With Selection.FormatConditions(1).Interior.Gradient.ColorStops.Add(0.5)
+        .Color = 39423
+        .TintAndShade = 0
+    End With
+    With Selection.FormatConditions(1).Interior.Gradient.ColorStops.Add(1)
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions(1).StopIfTrue = False
+
+    Range("R7:R31").Select
+    Selection.FormatConditions.Add Type:=xlExpression, Formula1:="=$R7=3"
+    Selection.FormatConditions(Selection.FormatConditions.Count).SetFirstPriority
+    With Selection.FormatConditions(1).Interior
+        .Pattern = xlPatternLinearGradient
+        .Gradient.Degree = 90
+        .Gradient.ColorStops.Clear
+    End With
+    With Selection.FormatConditions(1).Interior.Gradient.ColorStops.Add(0)
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = 0
+    End With
+    With Selection.FormatConditions(1).Interior.Gradient.ColorStops.Add(0.5)
+        .Color = 255
+        .TintAndShade = 0
+    End With
+    With Selection.FormatConditions(1).Interior.Gradient.ColorStops.Add(1)
+        .ThemeColor = xlThemeColorDark1
+        .TintAndShade = 0
+    End With
+    Selection.FormatConditions(1).StopIfTrue = False
+```
+
+(Même technique — dégradé blanc→couleur→blanc — que toutes les autres règles de cette macro ;
+`.Color = 5287936` = vert, `39423` = orange (même orange que la colonne O2), `255` = rouge (même
+rouge que « 21 »/« 22 »). Pas besoin de toucher à Gestion : sa mise en forme est statique, pas
+reconstruite par macro, donc la version déjà dans le fichier suffit et va tenir.)
+
+Pour tester : ferme et rouvre le fichier dans Excel après avoir collé ce bloc, remets une valeur
+dans Roues, vérifie que la couleur apparaît toujours après un Ctrl+S puis réouverture.
+
 ## Correctif du 19/09 : liste déroulante « Masquer » restait collée sur Roues
 
 Après ton retour (« dans Roues je ne peux mettre que x ») : la colonne Masquer avait, en plus de
