@@ -1,5 +1,23 @@
 # Correctifs VBA à coller — `piste - V3.xlsm`
 
+## Correctif du 19/09 : Actualiser ne sauvegardait plus piste-V3 (bug de mon refactor)
+
+Si tu as déjà collé la version précédente de ce fichier : **une ligne manque**, ajoute-la. En
+factorisant le bloc dupliqué dans `ArchiverDispoDuJour`, j'ai fusionné par erreur deux
+`ActiveWorkbook.Save` qui visaient deux classeurs différents à deux moments différents en un
+seul. Résultat : le bouton **Actualiser** sauvegardait bien l'archive du jour, mais plus
+`piste - V3.xlsm` lui-même — donc `Visu.xlsm` (qui ne lit que ce qui est enregistré sur le
+disque) ne voyait jamais la mise à jour. Dans la section « 1. Module1 » ci-dessous, juste après
+```vba
+    ActiveWorkbook.Save
+    Workbooks(myName).Activate
+```
+ajoute une seconde ligne `ActiveWorkbook.Save` (elle sauvegarde maintenant `piste - V3.xlsm`,
+puisqu'on vient de l'activer juste avant). Le code complet plus bas est déjà à jour avec ce
+correctif.
+
+---
+
 Ce fichier n'est **pas exécuté automatiquement** : je n'ai pas d'Excel/Windows dans cet
 environnement pour éditer/tester `vbaProject.bin` (format binaire compilé — une modification à
 l'aveugle serait invérifiable et pourrait corrompre le classeur). Tu copies-colles toi-même ces
@@ -91,6 +109,7 @@ Dim NomArchive As String
 
     ActiveWorkbook.Save
     Workbooks(myName).Activate
+    ActiveWorkbook.Save
 
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
