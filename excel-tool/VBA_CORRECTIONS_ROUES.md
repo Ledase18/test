@@ -1,5 +1,18 @@
 # Colonne « Roues » — ce qui a été fait et ce qu'il reste à coller
 
+## Correctif du 19/09 : liste déroulante « Masquer » restait collée sur Roues
+
+Après ton retour (« dans Roues je ne peux mettre que x ») : la colonne Masquer avait, en plus de
+sa mise en forme, une **liste déroulante de validation** (blanc ou « X », source
+`Paramètre!$B$46:$B$47`) enregistrée dans une zone du fichier que je n'avais pas vérifiée lors de
+l'insertion (validations "étendues" `x14:dataValidations`, distinctes du bloc `dataValidations`
+classique que j'avais bien contrôlé). Cette validation ciblait la position R par coordonnées
+(`R7:R31` / `R6:R31`), donc quand Roues a pris la place de la colonne R, elle en a hérité — d'où
+le blocage sur « x » uniquement. Corrigé : la validation est remise sur Masquer, à sa position
+actuelle (colonne S). Roues n'a plus aucune contrainte de saisie (texte libre, comme prévu).
+Revalidé (XML, diff binaire, VBA intact) et repoussé sur le repo — retélécharge le fichier avant
+de retester.
+
 ## Ce qui a déjà été modifié dans `piste - V3.xlsm` (fait, poussé sur le repo)
 
 J'ai directement édité le classeur (XML interne, zip) — validé par re-parsing XML, réouverture
