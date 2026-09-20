@@ -39,7 +39,8 @@ dans `VBA_CORRECTIONS_RETRAIT_VISU.md`.
 **Évolution du 20/09 — Lancement automatique sur le 2ᵉ écran** : la configuration réelle est un
 seul PC en double écran (2ᵉ écran = la TV), pas un poste TV séparé. `LancerTV` (Module1) remplace,
 dans `Workbook_Open`, l'ancien bloc qui ouvrait `Visu.xlsm` dans une deuxième instance Excel : il
-lance Chrome/Edge en `--kiosk` positionné sur le 2ᵉ écran (hypothèse « étendu à droite, y=0 », à
+lance Chrome/Edge en `--start-fullscreen` (pas `--kiosk`, qui bloque la sortie de plein écran)
+positionné sur le 2ᵉ écran (hypothèse « étendu à droite, y=0 », à
 ajuster si la disposition réelle diffère), avec repli sur le navigateur par défaut si ni Chrome ni
 Edge n'est trouvé à un emplacement standard. Détails et code dans
 `VBA_CORRECTIONS_LANCEMENT_TV.md`.

@@ -14,8 +14,11 @@ dans une deuxième instance Excel, mais avec un navigateur à la place.
   Paramètres → Système → Affichage → schéma des écrans (survole chaque écran pour voir sa
   position en pixels).
 - Cherche Chrome ou Edge aux emplacements d'installation standards.
-- Lance le navigateur trouvé en `--kiosk` (plein écran total, sans barre d'adresse ni onglets —
-  l'équivalent du plein écran que Visu imposait) positionné sur le 2ᵉ écran.
+- Lance le navigateur trouvé en `--start-fullscreen` (plein écran, comme le faisait Visu)
+  positionné sur le 2ᵉ écran. **Pas `--kiosk`** : ce mode-là est conçu pour des bornes publiques
+  et bloque volontairement la sortie (F11/Esc ne fonctionnent pas, seul Alt+F4 ferme la fenêtre)
+  — `--start-fullscreen` donne le même rendu visuel mais F11 bascule normalement en fenêtré, donc
+  tu peux ressortir et déplacer la fenêtre à la main si besoin.
 - Si ni Chrome ni Edge n'est trouvé à un emplacement standard : ouvre avec le navigateur par
   défaut (`FollowHyperlink`) sans position/plein écran automatique — à faire à la main la
   première fois dans ce cas.
@@ -31,9 +34,10 @@ Ajoute ce bloc à la suite de `GenererHTMLSituation` :
 
 ```vba
 ' ============================================================
-' Lancement TV -- ouvre situation-avions.html en plein écran sur le 2e
-' écran au démarrage de piste-V3, à la place de l'ancien lancement de
-' Visu.xlsm dans une 2e instance Excel.
+' Lancement TV -- ouvre situation-avions.html en plein écran (--start-fullscreen,
+' PAS --kiosk : ce dernier bloque la sortie) sur le 2e écran au démarrage de
+' piste-V3, à la place de l'ancien lancement de Visu.xlsm dans une 2e instance
+' Excel. F11 bascule normalement en fenêtré depuis --start-fullscreen.
 ' ============================================================
 
 Private Declare PtrSafe Function GetSystemMetrics Lib "user32" (ByVal nIndex As Long) As Long
@@ -77,7 +81,7 @@ Sub LancerTV()
     If browserPath <> "" Then
         Dim cmd As String
         cmd = """" & browserPath & """ --new-window --window-position=" & tvOffsetX & "," & tvOffsetY & _
-              " --kiosk """ & fileUrl & """"
+              " --start-fullscreen """ & fileUrl & """"
         Shell cmd, vbNormalFocus
     Else
         ThisWorkbook.FollowHyperlink htmlPath
@@ -147,10 +151,10 @@ nouvelle.
 Je n'ai pas de Windows/Chrome/Edge disponible dans cet environnement pour tester réellement le
 `Shell` et le positionnement multi-écran — c'est une technique standard (arguments de ligne de
 commande Chrome/Edge documentés), mais à valider chez toi :
-- Si `--window-position`/`--kiosk` sont ignorés (ça arrive quand une fenêtre Chrome utilisant le
-  même profil est déjà ouverte ailleurs : Chrome route parfois le nouveau lancement vers le
-  processus existant plutôt que d'en créer un nouveau avec les mêmes options) : dis-le-moi, la
-  solution est d'ajouter `--user-data-dir="C:\...\ChromeKiosk"` à la commande pour forcer un
-  profil dédié, garantissant une fenêtre neuve qui respecte les options.
+- Si `--window-position`/`--start-fullscreen` sont ignorés (ça arrive quand une fenêtre Chrome
+  utilisant le même profil est déjà ouverte ailleurs : Chrome route parfois le nouveau lancement
+  vers le processus existant plutôt que d'en créer un nouveau avec les mêmes options) : dis-le-moi,
+  la solution est d'ajouter `--user-data-dir="C:\...\ChromeTV"` à la commande pour forcer un profil
+  dédié, garantissant une fenêtre neuve qui respecte les options.
 - Si ton PC utilise un layout d'écrans qui n'est pas "TV à droite, même hauteur" : ajuste
   `tvOffsetX`/`tvOffsetY` avec les vraies coordonnées (Windows Paramètres d'affichage).
