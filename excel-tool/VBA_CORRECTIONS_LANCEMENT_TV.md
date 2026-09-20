@@ -23,6 +23,12 @@ dans une deuxième instance Excel, mais avec un navigateur à la place.
   relire lui-même sur disque toutes les 5s (`fetch`) sans recharger toute la page -- Chrome/Edge
   bloquent `fetch()` entre fichiers locaux par défaut, ce qui forçait le rechargement complet (le
   flash visible toutes les 5s que tu as signalé) tant que ce drapeau n'était pas là.
+- Lance le navigateur avec un profil dédié (`--user-data-dir=...\ChromeTV`) : **c'est le correctif
+  de ce tour**. Si Chrome/Edge tournait déjà (même profil par défaut) quand piste-V3 s'ouvre, un
+  nouveau lancement se contente d'ouvrir une fenêtre dans le processus existant et **ignore tous
+  les drapeaux ci-dessus** -- position, plein écran, et surtout l'accès fichier local, ce qui
+  explique que le flash persistait malgré le drapeau ajouté au tour précédent. Un profil séparé
+  force une fenêtre réellement neuve qui les respecte.
 - Si ni Chrome ni Edge n'est trouvé à un emplacement standard : ouvre avec le navigateur par
   défaut (`FollowHyperlink`) sans position/plein écran automatique — à faire à la main la
   première fois dans ce cas.
@@ -82,9 +88,17 @@ Sub LancerTV()
     Dim fileUrl As String
     fileUrl = "file:///" & Replace(htmlPath, "\", "/")
 
+    ' Profil Chrome/Edge dédié : si le navigateur tourne déjà (même profil), un
+    ' nouveau lancement route vers le processus existant et IGNORE tous les
+    ' drapeaux ci-dessous (position, plein écran, accès fichier local). Un
+    ' --user-data-dir séparé force une fenêtre neuve qui les respecte vraiment.
+    Dim profileDir As String
+    profileDir = Environ$("LocalAppData") & "\ChromeTV"
+
     If browserPath <> "" Then
         Dim cmd As String
-        cmd = """" & browserPath & """ --new-window --window-position=" & tvOffsetX & "," & tvOffsetY & _
+        cmd = """" & browserPath & """ --user-data-dir=""" & profileDir & """ --new-window" & _
+              " --window-position=" & tvOffsetX & "," & tvOffsetY & _
               " --start-fullscreen --allow-file-access-from-files """ & fileUrl & """"
         Shell cmd, vbNormalFocus
     Else
@@ -153,15 +167,13 @@ nouvelle.
 ## Point non vérifiable d'ici
 
 Je n'ai pas de Windows/Chrome/Edge disponible dans cet environnement pour tester réellement le
-`Shell` et le positionnement multi-écran — c'est une technique standard (arguments de ligne de
-commande Chrome/Edge documentés), mais à valider chez toi :
-- Si `--window-position`/`--start-fullscreen`/`--allow-file-access-from-files` sont ignorés (ça
-  arrive quand une fenêtre Chrome utilisant le même profil est déjà ouverte ailleurs : Chrome
-  route parfois le nouveau lancement vers le processus existant plutôt que d'en créer un nouveau
-  avec les mêmes options) : dis-le-moi, la solution est d'ajouter `--user-data-dir="C:\...\ChromeTV"`
-  à la commande pour forcer un profil dédié, garantissant une fenêtre neuve qui respecte les
-  options. Signe que c'est ce qui se passe : le flash plein écran revient toutes les 5s malgré la
-  mise à jour de `situation-avions-template.html` (le rafraîchissement retombe alors sur son repli
-  `location.reload()` faute de pouvoir lire le fichier localement).
+`Shell`, le profil dédié et le positionnement multi-écran — ce sont des techniques standards
+(arguments de ligne de commande Chrome/Edge documentés), mais à valider chez toi :
 - Si ton PC utilise un layout d'écrans qui n'est pas "TV à droite, même hauteur" : ajuste
   `tvOffsetX`/`tvOffsetY` avec les vraies coordonnées (Windows Paramètres d'affichage).
+- **Si le flash persiste malgré le profil dédié** : c'est le signe que ce n'est pas (ou plus) un
+  problème de drapeaux ignorés. Ouvre les outils de développement du navigateur sur la fenêtre TV
+  (F12) → onglet Console, laisse tourner un cycle de 5s, et regarde s'il y a une erreur rouge au
+  moment du saut. Dis-moi ce qui s'affiche (ou une capture) — ça me dira si `fetch` échoue pour
+  une autre raison (chemin de fichier incorrect, fichier verrouillé pendant l'écriture VBA...) et
+  je pourrai corriger précisément plutôt que deviner un correctif de plus.
