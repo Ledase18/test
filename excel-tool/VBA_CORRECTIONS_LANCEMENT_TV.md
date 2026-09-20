@@ -22,6 +22,11 @@ dans une deuxième instance Excel, mais avec un navigateur à la place.
 
 ## `piste - V3.xlsm` — Module1 : nouvelle procédure
 
+`PtrSafe` sans variante conditionnelle `#If VBA7` : c'est requis depuis Office 2010 (32 et 64
+bits confondus), donc une branche `#Else` sans `PtrSafe` ne sert plus à rien en pratique — et
+l'éditeur VBA a tendance à surligner cette branche en rouge à tort (faux positif connu du
+vérificateur de syntaxe en temps réel sur les blocs `#Else`), donc autant l'omettre.
+
 Ajoute ce bloc à la suite de `GenererHTMLSituation` :
 
 ```vba
@@ -31,11 +36,7 @@ Ajoute ce bloc à la suite de `GenererHTMLSituation` :
 ' Visu.xlsm dans une 2e instance Excel.
 ' ============================================================
 
-#If VBA7 Then
-    Private Declare PtrSafe Function GetSystemMetrics Lib "user32" (ByVal nIndex As Long) As Long
-#Else
-    Private Declare Function GetSystemMetrics Lib "user32" (ByVal nIndex As Long) As Long
-#End If
+Private Declare PtrSafe Function GetSystemMetrics Lib "user32" (ByVal nIndex As Long) As Long
 Private Const SM_CXSCREEN As Long = 0
 
 Sub LancerTV()
