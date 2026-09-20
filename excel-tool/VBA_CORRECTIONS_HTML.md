@@ -26,7 +26,7 @@ Confirmé en lisant directement la feuille `Situation` (ligne d'en-têtes 6, don
 | B       | AVION            | `tail`     | texte tel quel |
 | D       | Pos.             | `pos`      | texte (les positions numériques type `11` sont reconverties en texte sans décimale) |
 | E       | Camp.            | `camp`     | `true` si = "X" |
-| F       | O2               | `o2`       | `true` si = "X" |
+| F       | O2               | `o2`       | texte brut ("X" ou "O2" selon ce que contient la cellule -- couleur différente pour chaque cas, voir ci-dessous) |
 | G       | AM               | `am`       | texte tel quel |
 | H       | PM               | `pm`       | texte tel quel |
 | I       | VDN              | `vdn`      | texte tel quel |
@@ -44,6 +44,9 @@ Une ligne est ignorée si la colonne B (AVION) est vide.
 **Règle de couleur du Plein** (confirmée) : rouge si PLEIN seul (sans TRG+Qté) ; orange si PLEIN
 **et** TRG+Qté renseignés mais pas encore de V ; vert dès qu'il y a un V en colonne N, même sans
 PLEIN/TRG+Qté renseignés ; bleu si l'avion est en vol.
+
+**Règle de couleur du O2** (confirmée) : si la cellule contient "X" -> affiche "O2 X" en rouge ;
+si la cellule contient "O2" -> affiche juste "O2" en orange ; sinon rien.
 
 Ce mapping a été vérifié directement sur le fichier (en-têtes ligne 6 + données réelles), donc
 fiable — pas une supposition cette fois.
@@ -91,9 +94,9 @@ Sub GenererHTMLSituation()
     Dim ws As Worksheet
     Set ws = ThisWorkbook.Sheets("Situation")
 
-    Dim tail As String, pos As String, am As String, pm As String, vdn As String
+    Dim tail As String, pos As String, o2 As String, am As String, pm As String, vdn As String
     Dim ptr As String, avq As String, plein As String, trg As String, obs As String
-    Dim camp As Boolean, o2 As Boolean, pleinValide As Boolean, masque As Boolean
+    Dim camp As Boolean, pleinValide As Boolean, masque As Boolean
     Dim item As String
     Dim itemsArr(0 To 24) As String
     Dim n As Long
@@ -105,7 +108,7 @@ Sub GenererHTMLSituation()
         If tail <> "" Then
             pos = CellStr(ws.Cells(r, "D"))
             camp = (UCase(CellStr(ws.Cells(r, "E"))) = "X")
-            o2 = (UCase(CellStr(ws.Cells(r, "F"))) = "X")
+            o2 = CellStr(ws.Cells(r, "F"))
             am = CellStr(ws.Cells(r, "G"))
             pm = CellStr(ws.Cells(r, "H"))
             vdn = CellStr(ws.Cells(r, "I"))
@@ -118,7 +121,7 @@ Sub GenererHTMLSituation()
             masque = (UCase(CellStr(ws.Cells(r, "S"))) = "X")
 
             item = "    {tail:" & JsStr(tail) & ", pos:" & JsStr(pos) & _
-                   ", camp:" & JsBool(camp) & ", o2:" & JsBool(o2) & _
+                   ", camp:" & JsBool(camp) & ", o2:" & JsStr(o2) & _
                    ", am:" & JsStr(am) & ", pm:" & JsStr(pm) & ", vdn:" & JsStr(vdn) & _
                    ", ptr:" & JsStr(ptr) & ", avq:" & JsStr(avq) & ", plein:" & JsStr(plein) & _
                    ", trg:" & JsStr(trg) & ", v:" & JsBool(pleinValide)

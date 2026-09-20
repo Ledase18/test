@@ -419,9 +419,20 @@
     if (!value) return "";
     return `<span class="chip ${cls}"><span class="k">${label}</span><span class="v">${value}</span></span>`;
   }
+  function plainChip(value, cls){
+    if (!value) return "";
+    return `<span class="chip ${cls}"><span class="v">${value}</span></span>`;
+  }
+  // Règle confirmée : "X" -> "O2 X" en rouge ; "O2" (texte) -> juste "O2" en orange.
+  function o2Chip(a){
+    const raw = (a.o2 || "").trim().toUpperCase();
+    if (raw === "X") return chip("O2", "X", "crit");
+    if (raw === "O2") return plainChip("O2", "warn");
+    return "";
+  }
   function chipsFor(a){
     let h = "";
-    h += chip("O2", a.o2 ? "X" : "", "info");
+    h += o2Chip(a);
     h += chip("Camp", a.camp ? "X" : "", "neutral");
     h += chip("AM", a.am, a.am === "VOL" ? "info" : "neutral");
     h += chip("PM", a.pm, a.pm === "VOL" ? "info" : "neutral");
