@@ -33,12 +33,17 @@ Confirmé en lisant directement la feuille `Situation` (ligne d'en-têtes 6, don
 | J       | PTR              | `ptr`      | texte tel quel |
 | K       | AVQ              | `avq`      | texte tel quel |
 | L       | PLEIN            | `plein`    | texte tel quel |
+| M       | TRG + Qté        | `trg`      | texte tel quel (trigramme + quantité de qui a fait le plein) |
 | N       | V                | `v`        | `true` si = "V" (plein validé) |
 | O       | OBSERVATIONS     | `obs`      | texte tel quel |
 | S       | Masquer          | `masque`   | champ ajouté seulement si = "X" (sinon absent) |
 | V23     | (MAJ FDS/KANNAD) | date pill  | formatée `jj/mm/aaaa` |
 
 Une ligne est ignorée si la colonne B (AVION) est vide.
+
+**Règle de couleur du Plein** (confirmée) : rouge si PLEIN seul (sans TRG+Qté) ; orange si PLEIN
+**et** TRG+Qté renseignés mais pas encore de V ; vert dès qu'il y a un V en colonne N, même sans
+PLEIN/TRG+Qté renseignés ; bleu si l'avion est en vol.
 
 Ce mapping a été vérifié directement sur le fichier (en-têtes ligne 6 + données réelles), donc
 fiable — pas une supposition cette fois.
@@ -87,7 +92,7 @@ Sub GenererHTMLSituation()
     Set ws = ThisWorkbook.Sheets("Situation")
 
     Dim tail As String, pos As String, am As String, pm As String, vdn As String
-    Dim ptr As String, avq As String, plein As String, obs As String
+    Dim ptr As String, avq As String, plein As String, trg As String, obs As String
     Dim camp As Boolean, o2 As Boolean, pleinValide As Boolean, masque As Boolean
     Dim item As String
     Dim itemsArr(0 To 24) As String
@@ -107,6 +112,7 @@ Sub GenererHTMLSituation()
             ptr = CellStr(ws.Cells(r, "J"))
             avq = CellStr(ws.Cells(r, "K"))
             plein = CellStr(ws.Cells(r, "L"))
+            trg = CellStr(ws.Cells(r, "M"))
             pleinValide = (UCase(CellStr(ws.Cells(r, "N"))) = "V")
             obs = CellStr(ws.Cells(r, "O"))
             masque = (UCase(CellStr(ws.Cells(r, "S"))) = "X")
@@ -115,7 +121,7 @@ Sub GenererHTMLSituation()
                    ", camp:" & JsBool(camp) & ", o2:" & JsBool(o2) & _
                    ", am:" & JsStr(am) & ", pm:" & JsStr(pm) & ", vdn:" & JsStr(vdn) & _
                    ", ptr:" & JsStr(ptr) & ", avq:" & JsStr(avq) & ", plein:" & JsStr(plein) & _
-                   ", v:" & JsBool(pleinValide)
+                   ", trg:" & JsStr(trg) & ", v:" & JsBool(pleinValide)
             If masque Then item = item & ", masque:true"
             item = item & ", obs:" & JsStr(obs) & "}"
 
@@ -273,5 +279,5 @@ moi, il y a une alternative en `Scripting.FileSystemObject` mais qui gère moins
 - `Camp.`, `O2`, etc. sont lus mais aucune règle particulière n'existe pour eux au-delà de
   l'affichage en chip — si un de ces champs doit influer sur la couleur globale de la ligne,
   dis-le moi.
-- La colonne M (`TRG + Qté`) et la deuxième colonne "V" (Q, liée à GILETS/DEM VAL) ne sont pas
-  exportées — le thème actuel ne les affiche pas. Je peux les ajouter si besoin.
+- La deuxième colonne "V" (Q, liée à GILETS/DEM VAL) n'est pas exportée — le thème actuel ne
+  l'affiche pas. Je peux l'ajouter si besoin.

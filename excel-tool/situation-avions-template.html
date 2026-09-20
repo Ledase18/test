@@ -316,13 +316,15 @@
     if (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL") return "info";
     return "ok";
   }
-  // Couleur du plein : bleu en vol ; "V" (validé, feuille gestion) -> vert même
-  // sans quantité renseignée ; sinon quantité sans V -> orange ; rien/INC -> rouge.
+  // Couleur du plein (règle confirmée) : bleu en vol ; vert dès qu'il y a un "V"
+  // en colonne N, même sans PLEIN/TRG+Qté ; orange si PLEIN ET TRG+Qté renseignés
+  // mais pas encore de V ; rouge si PLEIN seul (sans TRG+Qté) ou rien du tout.
   function pleinColor(a){
     if (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL") return "info";
     if (a.v) return "ok";
-    if (!a.plein || a.plein === "INC") return "crit";
-    return "warn";
+    if (a.plein === "INC") return "crit";
+    if (a.plein && a.trg) return "warn";
+    return "crit";
   }
   const STATUT_LABEL = {crit:"Indispo", info:"Vol", ok:"Prêt"};
   const HEAD = ["Immat.", "Pos.", "Prog.", "PTR", "AVQ", "Plein", "Statut", "Observations"];
