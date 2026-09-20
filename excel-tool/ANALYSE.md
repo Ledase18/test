@@ -36,6 +36,14 @@ côté du classeur, à chaque Actualiser/Valider. Le fichier généré se rechar
 dans `VBA_CORRECTIONS_HTML.md` ; retrait des appels `PousserRafraichissementVisu` devenus inutiles
 dans `VBA_CORRECTIONS_RETRAIT_VISU.md`.
 
+**Évolution du 20/09 — Lancement automatique sur le 2ᵉ écran** : la configuration réelle est un
+seul PC en double écran (2ᵉ écran = la TV), pas un poste TV séparé. `LancerTV` (Module1) remplace,
+dans `Workbook_Open`, l'ancien bloc qui ouvrait `Visu.xlsm` dans une deuxième instance Excel : il
+lance Chrome/Edge en `--kiosk` positionné sur le 2ᵉ écran (hypothèse « étendu à droite, y=0 », à
+ajuster si la disposition réelle diffère), avec repli sur le navigateur par défaut si ni Chrome ni
+Edge n'est trouvé à un emplacement standard. Détails et code dans
+`VBA_CORRECTIONS_LANCEMENT_TV.md`.
+
 ## 1. Fonctionnement d'ensemble
 
 Outil de suivi de disponibilité/occupation des postes de stationnement avion sur une piste
