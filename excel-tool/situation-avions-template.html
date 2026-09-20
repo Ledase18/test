@@ -308,13 +308,6 @@
 </div>
 
 <script>
-  // AIRCRAFT est généré par la macro GenererHTMLSituation (Module1, piste - V3.xlsm)
-  // à partir de Situation!B7:S31, puis injecté ici en remplaçant le marqueur dédié
-  // ci-dessous -- ne pas éditer les données à la main dans le fichier exporté
-  // (situation-avions.html), seulement dans ce template.
-  // v:true = colonne N ("V") -- plein validé. masque:true = colonne S ("Masquer").
-  const AIRCRAFT = __AIRCRAFT_DATA__;
-
   // Règle confirmée : sur PTR/AVQ, un "I" = rouge (indispo), sinon vert, sauf si
   // l'avion est en vol (bleu). MTN et les autres trigrammes n'ont pas de couleur
   // dédiée -- ce ne sont que des libellés d'état, pas des indicateurs de gravité.
@@ -332,42 +325,8 @@
     return "warn";
   }
   const STATUT_LABEL = {crit:"Indispo", info:"Vol", ok:"Prêt"};
-
-  // Un avion masqué (Masquer = "x" sur Situation) sort du tableau ET du plan de
-  // stationnement -- il reste dans les données mais n'est plus affiché sur Visu.
-  const VISIBLE = AIRCRAFT.filter(a => !a.masque);
-
   const HEAD = ["Immat.", "Pos.", "Prog.", "PTR", "AVQ", "Plein", "Statut", "Observations"];
-  let tableHtml = HEAD.map(h => `<div class="bt-head">${h}</div>`).join("");
 
-  tableHtml += VISIBLE.map((a, i) => {
-    const st = stateOf(a);
-    const parity = i % 2 === 0 ? "row-odd" : "row-even";
-    const cell = (cls, content) => `<div class="bt-cell ${parity} ${cls || ""}">${content}</div>`;
-
-    const prog = (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL")
-      ? `<span class="txt-info">VOL</span>`
-      : (a.am || a.pm || a.vdn || `<span class="txt-neutral">&mdash;</span>`);
-
-    return (
-      cell(`tail-cell txt-${st}`, a.tail) +
-      cell("", a.pos ? `<span class="bt-pos">${a.pos}</span>` : "") +
-      cell("", prog) +
-      cell("", a.ptr ? `<span class="${a.ptr === "I" ? "txt-crit" : "txt-neutral"}">${a.ptr}</span>` : "") +
-      cell("", a.avq ? `<span class="${a.avq === "I" ? "txt-crit" : "txt-neutral"}">${a.avq}</span>` : "") +
-      cell("", a.plein ? `<span class="txt-${pleinColor(a)}">${a.plein}</span>` : "") +
-      cell("bt-statut", `<span class="txt-${st}">${STATUT_LABEL[st]}</span>`) +
-      cell("obs-cell", a.obs || "")
-    );
-  }).join("");
-
-  document.getElementById("list").innerHTML = tableHtml;
-
-  // ---------- plan de stationnement ----------
-  // Schéma reconstitué à partir d'une capture du plan Visu existant (voie en
-  // peigne, postes 7-22 en haut / 6-1 en bas, 4 postes de dégivrage/parking
-  // A-D + case Lavage). Les proportions sont approximatives : à recaler sur
-  // les coordonnées réelles si le tracé ne correspond pas au terrain.
   function normPos(pos){
     // "A7" -> {zone:"A", num:"7"} / "11" -> {zone:"Voie", num:"11"} / "lav" -> spécial
     if (!pos) return null;
@@ -376,15 +335,6 @@
     if (/^\d+$/.test(pos)) return {zone:"Voie", num: pos};
     return {zone:"special", num: pos};
   }
-
-  const occByStand = {};
-  let lavage = null;
-  VISIBLE.forEach(a => {
-    const p = normPos(a.pos);
-    if (!p) return;
-    if (p.zone === "special"){ if (p.num.toLowerCase() === "lav") lavage = a; return; }
-    occByStand[p.zone + "|" + p.num] = a;
-  });
 
   function slotBadge(cx, cy, slotLabel, occ){
     const w = 32, h = 22, rx = cx - w/2, ry = cy - h/2;
@@ -410,92 +360,150 @@
     return `<text class="stand-code" x="${cx}" y="${cy+4}" text-anchor="middle" style="font-size:13px">${slotLabel}</text>`;
   }
 
-  // ---- voie en peigne (postes 7-22 en haut, 6-1 en bas) ----
-  // Chaque poste est une ligne de guidage au sol : l'avion la suit et stationne
-  // SUR la ligne (pas dans une case entre deux lignes) -- donc une seule ligne
-  // par poste, pas de parois de chaque côté.
-  const combX0 = 170, standW = 48, nUpper = 16;
-  const upperTopY = 55, spineY = 185, lowerBotY = 300;
-  const combRight = combX0 + nUpper * standW - standW / 2;
+  // Construit tout l'affichage (tableau + plan) à partir des données -- appelée au
+  // chargement initial ET à chaque rafraîchissement (voir refreshData), pour ne
+  // jamais recharger la page entière (évite le flash toutes les 5s).
+  function render(AIRCRAFT, KANNAD_DATE){
+    document.querySelector(".kannad-pill .val").textContent = KANNAD_DATE;
 
-  let combLines = "";
-  combLines += `<path class="diagram-line" d="M${combX0},${upperTopY} L${combX0-90},${spineY} L${combX0},${lowerBotY}"/>`;
-  combLines += `<line class="diagram-line" x1="${combX0}" y1="${spineY}" x2="${combRight+standW/2}" y2="${spineY}"/>`;
+    // Un avion masqué (Masquer = "x" sur Situation) sort du tableau ET du plan de
+    // stationnement -- il reste dans les données mais n'est plus affiché sur Visu.
+    const VISIBLE = AIRCRAFT.filter(a => !a.masque);
 
-  let combSlots = "";
-  for (let i = 0; i < nUpper; i++){
-    const num = String(7 + i);
-    const cx = combX0 + i * standW + standW / 2;
-    combLines += `<line class="diagram-line" x1="${cx}" y1="${upperTopY}" x2="${cx}" y2="${spineY}"/>`;
-    combSlots += lineSlot(cx, (upperTopY + spineY) / 2, num, occByStand["Voie|" + num]);
-  }
-  for (let i = 0; i < 6; i++){
-    const num = String(6 - i);
-    const cx = combX0 + i * standW + standW / 2;
-    combLines += `<line class="diagram-line" x1="${cx}" y1="${spineY}" x2="${cx}" y2="${lowerBotY}"/>`;
-    combSlots += lineSlot(cx, (spineY + lowerBotY) / 2, num, occByStand["Voie|" + num]);
-  }
+    let tableHtml = HEAD.map(h => `<div class="bt-head">${h}</div>`).join("");
+    tableHtml += VISIBLE.map((a, i) => {
+      const st = stateOf(a);
+      const parity = i % 2 === 0 ? "row-odd" : "row-even";
+      const cell = (cls, content) => `<div class="bt-cell ${parity} ${cls || ""}">${content}</div>`;
 
-  // ---- case Lavage ----
-  const lavX = 800, lavY = 308, lavW = 150, lavH = 38;
-  let lavageHtml = `
-    <rect class="lavage-box" x="${lavX}" y="${lavY}" width="${lavW}" height="${lavH}" rx="4"/>
-    <line class="diagram-line" x1="${lavX+86}" y1="${lavY}" x2="${lavX+86}" y2="${lavY+lavH}"/>
-    <text class="lavage-label" x="${lavX+12}" y="${lavY+lavH/2+4}">Lavage</text>`;
-  lavageHtml += lavage
-    ? `<text class="stand-occ occ-${stateOf(lavage)}" x="${lavX+118}" y="${lavY+lavH/2+5}" text-anchor="middle">${lavage.tail.split(" ").pop()}</text>`
-    : `<text class="stand-occ" x="${lavX+118}" y="${lavY+lavH/2+5}" text-anchor="middle">&mdash;</text>`;
+      const prog = (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL")
+        ? `<span class="txt-info">VOL</span>`
+        : (a.am || a.pm || a.vdn || `<span class="txt-neutral">&mdash;</span>`);
 
-  // ---- postes A / B / C / D (formes chanfreinées avec grille de postes) ----
-  const podY = 378, podH = 165;
-  const PODS = [
-    {id:"A", x:40,  y:podY, w:175, h:podH, apex:true,
-      rows:[["3","2","4"],["6","5","7"],["9","8",null]]},
-    {id:"B", x:215, y:podY, w:185, h:podH, apex:true,
-      rows:[["3","2","4"],["6","5","7"],["9","8","10"]]},
-    {id:"C", x:415, y:podY, w:170, h:podH, apex:false,
-      rows:[["3","1","2"],["6","4","5"],["7",null,"8"]]},
-    {id:"D", x:585, y:podY, w:170, h:podH, apex:false,
-      rows:[["3","1","2"],["6","4","5"],["7",null,"8"]]},
-  ];
+      return (
+        cell(`tail-cell txt-${st}`, a.tail) +
+        cell("", a.pos ? `<span class="bt-pos">${a.pos}</span>` : "") +
+        cell("", prog) +
+        cell("", a.ptr ? `<span class="${a.ptr === "I" ? "txt-crit" : "txt-neutral"}">${a.ptr}</span>` : "") +
+        cell("", a.avq ? `<span class="${a.avq === "I" ? "txt-crit" : "txt-neutral"}">${a.avq}</span>` : "") +
+        cell("", a.plein ? `<span class="txt-${pleinColor(a)}">${a.plein}</span>` : "") +
+        cell("bt-statut", `<span class="txt-${st}">${STATUT_LABEL[st]}</span>`) +
+        cell("obs-cell", a.obs || "")
+      );
+    }).join("");
+    document.getElementById("list").innerHTML = tableHtml;
 
-  let podsHtml = "";
-  PODS.forEach(p => {
-    let path, gy0, gh;
-    if (p.apex){
-      const peakH = 36;
-      path = `M${p.x+p.w/2},${p.y} L${p.x+p.w},${p.y+peakH} L${p.x+p.w},${p.y+p.h} L${p.x},${p.y+p.h} L${p.x},${p.y+peakH} Z`;
-      gy0 = p.y + peakH + 16; gh = p.h - peakH - 28;
-    } else {
-      const c = 28;
-      path = `M${p.x+c},${p.y} L${p.x+p.w-c},${p.y} L${p.x+p.w},${p.y+c} L${p.x+p.w},${p.y+p.h} L${p.x},${p.y+p.h} L${p.x},${p.y+c} Z`;
-      gy0 = p.y + c + 18; gh = p.h - c - 30;
+    // ---------- plan de stationnement ----------
+    // Schéma reconstitué à partir d'une capture du plan Visu existant (voie en
+    // peigne, postes 7-22 en haut / 6-1 en bas, 4 postes de dégivrage/parking
+    // A-D + case Lavage). Les proportions sont approximatives : à recaler sur
+    // les coordonnées réelles si le tracé ne correspond pas au terrain.
+    const occByStand = {};
+    let lavage = null;
+    VISIBLE.forEach(a => {
+      const p = normPos(a.pos);
+      if (!p) return;
+      if (p.zone === "special"){ if (p.num.toLowerCase() === "lav") lavage = a; return; }
+      occByStand[p.zone + "|" + p.num] = a;
+    });
+
+    // ---- voie en peigne (postes 7-22 en haut, 6-1 en bas) ----
+    // Chaque poste est une ligne de guidage au sol : l'avion la suit et stationne
+    // SUR la ligne (pas dans une case entre deux lignes) -- donc une seule ligne
+    // par poste, pas de parois de chaque côté.
+    const combX0 = 170, standW = 48, nUpper = 16;
+    const upperTopY = 55, spineY = 185, lowerBotY = 300;
+    const combRight = combX0 + nUpper * standW - standW / 2;
+
+    let combLines = "";
+    combLines += `<path class="diagram-line" d="M${combX0},${upperTopY} L${combX0-90},${spineY} L${combX0},${lowerBotY}"/>`;
+    combLines += `<line class="diagram-line" x1="${combX0}" y1="${spineY}" x2="${combRight+standW/2}" y2="${spineY}"/>`;
+
+    let combSlots = "";
+    for (let i = 0; i < nUpper; i++){
+      const num = String(7 + i);
+      const cx = combX0 + i * standW + standW / 2;
+      combLines += `<line class="diagram-line" x1="${cx}" y1="${upperTopY}" x2="${cx}" y2="${spineY}"/>`;
+      combSlots += lineSlot(cx, (upperTopY + spineY) / 2, num, occByStand["Voie|" + num]);
     }
-    podsHtml += `<path class="diagram-fill" d="${path}"/>`;
-    podsHtml += `<text class="pod-label" x="${p.x+p.w/2}" y="${p.y-12}" text-anchor="middle">${p.id}</text>`;
-
-    if (p.apex){
-      const cx = p.x + p.w/2, cy = p.y + 36*0.62 + 8;
-      podsHtml += slotBadge(cx, cy, "1", occByStand[p.id + "|1"]);
+    for (let i = 0; i < 6; i++){
+      const num = String(6 - i);
+      const cx = combX0 + i * standW + standW / 2;
+      combLines += `<line class="diagram-line" x1="${cx}" y1="${spineY}" x2="${cx}" y2="${lowerBotY}"/>`;
+      combSlots += lineSlot(cx, (spineY + lowerBotY) / 2, num, occByStand["Voie|" + num]);
     }
 
-    const colX = [p.x + p.w/6, p.x + p.w/2, p.x + p.w*5/6];
-    const rowY = [gy0 + gh/6, gy0 + gh/2, gy0 + gh*5/6];
-    p.rows.forEach((row, ri) => {
-      row.forEach((num, ci) => {
-        if (num === null) return;
-        podsHtml += slotBadge(colX[ci], rowY[ri], num, occByStand[p.id + "|" + num]);
+    // ---- case Lavage ----
+    const lavX = 800, lavY = 308, lavW = 150, lavH = 38;
+    let lavageHtml = `
+      <rect class="lavage-box" x="${lavX}" y="${lavY}" width="${lavW}" height="${lavH}" rx="4"/>
+      <line class="diagram-line" x1="${lavX+86}" y1="${lavY}" x2="${lavX+86}" y2="${lavY+lavH}"/>
+      <text class="lavage-label" x="${lavX+12}" y="${lavY+lavH/2+4}">Lavage</text>`;
+    lavageHtml += lavage
+      ? `<text class="stand-occ occ-${stateOf(lavage)}" x="${lavX+118}" y="${lavY+lavH/2+5}" text-anchor="middle">${lavage.tail.split(" ").pop()}</text>`
+      : `<text class="stand-occ" x="${lavX+118}" y="${lavY+lavH/2+5}" text-anchor="middle">&mdash;</text>`;
+
+    // ---- postes A / B / C / D (formes chanfreinées avec grille de postes) ----
+    const podY = 378, podH = 165;
+    const PODS = [
+      {id:"A", x:40,  y:podY, w:175, h:podH, apex:true,
+        rows:[["3","2","4"],["6","5","7"],["9","8",null]]},
+      {id:"B", x:215, y:podY, w:185, h:podH, apex:true,
+        rows:[["3","2","4"],["6","5","7"],["9","8","10"]]},
+      {id:"C", x:415, y:podY, w:170, h:podH, apex:false,
+        rows:[["3","1","2"],["6","4","5"],["7",null,"8"]]},
+      {id:"D", x:585, y:podY, w:170, h:podH, apex:false,
+        rows:[["3","1","2"],["6","4","5"],["7",null,"8"]]},
+    ];
+
+    let podsHtml = "";
+    PODS.forEach(p => {
+      let path, gy0, gh;
+      if (p.apex){
+        const peakH = 36;
+        path = `M${p.x+p.w/2},${p.y} L${p.x+p.w},${p.y+peakH} L${p.x+p.w},${p.y+p.h} L${p.x},${p.y+p.h} L${p.x},${p.y+peakH} Z`;
+        gy0 = p.y + peakH + 16; gh = p.h - peakH - 28;
+      } else {
+        const c = 28;
+        path = `M${p.x+c},${p.y} L${p.x+p.w-c},${p.y} L${p.x+p.w},${p.y+c} L${p.x+p.w},${p.y+p.h} L${p.x},${p.y+p.h} L${p.x},${p.y+c} Z`;
+        gy0 = p.y + c + 18; gh = p.h - c - 30;
+      }
+      podsHtml += `<path class="diagram-fill" d="${path}"/>`;
+      podsHtml += `<text class="pod-label" x="${p.x+p.w/2}" y="${p.y-12}" text-anchor="middle">${p.id}</text>`;
+
+      if (p.apex){
+        const cx = p.x + p.w/2, cy = p.y + 36*0.62 + 8;
+        podsHtml += slotBadge(cx, cy, "1", occByStand[p.id + "|1"]);
+      }
+
+      const colX = [p.x + p.w/6, p.x + p.w/2, p.x + p.w*5/6];
+      const rowY = [gy0 + gh/6, gy0 + gh/2, gy0 + gh*5/6];
+      p.rows.forEach((row, ri) => {
+        row.forEach((num, ci) => {
+          if (num === null) return;
+          podsHtml += slotBadge(colX[ci], rowY[ri], num, occByStand[p.id + "|" + num]);
+        });
       });
     });
-  });
 
-  const apron = document.getElementById("apron");
-  apron.innerHTML = `<svg viewBox="0 0 1000 570" xmlns="http://www.w3.org/2000/svg">
-    <g>${combLines}</g>
-    <g>${combSlots}</g>
-    <g>${lavageHtml}</g>
-    <g>${podsHtml}</g>
-  </svg>`;
+    document.getElementById("apron").innerHTML = `<svg viewBox="0 0 1000 570" xmlns="http://www.w3.org/2000/svg">
+      <g>${combLines}</g>
+      <g>${combSlots}</g>
+      <g>${lavageHtml}</g>
+      <g>${podsHtml}</g>
+    </svg>`;
+  }
+
+  // Le bloc entre les deux marqueurs est régénéré intégralement par la macro
+  // GenererHTMLSituation (Module1, piste - V3.xlsm) à partir de Situation!B7:S31
+  // à chaque export -- ne pas éditer les données à la main dans le fichier exporté
+  // (situation-avions.html), seulement dans ce template. v:true = colonne N ("V",
+  // plein validé). masque:true = colonne S ("Masquer").
+  /*DATA_START*/
+  const AIRCRAFT = __AIRCRAFT_DATA__;
+  const KANNAD_DATE = "__KANNAD_DATE__";
+  /*DATA_END*/
+  render(AIRCRAFT, KANNAD_DATE);
 
   function tick(){
     // Heure UTC (le "Z" affiché est le vrai suffixe Zulu, pas juste un libellé).
@@ -512,8 +520,26 @@
   tick();
   setInterval(tick, 1000);
 
-  // Le fichier est réécrit sur disque par piste-V3 à chaque Actualiser/Valider ;
-  // le navigateur kiosque doit relire le fichier pour voir les nouvelles données.
-  // Un simple reload périodique suffit (pas de serveur local nécessaire).
-  setInterval(() => location.reload(), 5000);
+  // Le fichier est réécrit sur disque par piste-V3 à chaque Actualiser/Valider.
+  // On va chercher sa propre dernière version toutes les 5s et on ne remplace que
+  // le contenu (pas de location.reload -- ça évite le flash plein écran). Ça
+  // nécessite que le navigateur soit lancé avec --allow-file-access-from-files
+  // (voir LancerTV) : fetch() sur un fichier local est bloqué par défaut sinon.
+  async function refreshData(){
+    try {
+      const res = await fetch(location.href.split("?")[0] + "?_=" + Date.now(), {cache:"no-store"});
+      if (!res.ok) throw new Error("http " + res.status);
+      const text = await res.text();
+      const m = text.match(/\/\*DATA_START\*\/([\s\S]*?)\/\*DATA_END\*\//);
+      if (!m) throw new Error("marqueurs introuvables");
+      const scope = Function(m[1] + "\nreturn {AIRCRAFT, KANNAD_DATE};")();
+      render(scope.AIRCRAFT, scope.KANNAD_DATE);
+    } catch (e){
+      // Repli : si le fetch local échoue (accès fichier bloqué, fichier en cours
+      // d'écriture...), on retombe sur un rechargement complet plutôt que de rester
+      // figé sur des données périmées sans le signaler.
+      location.reload();
+    }
+  }
+  setInterval(refreshData, 5000);
 </script>

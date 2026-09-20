@@ -19,6 +19,10 @@ dans une deuxième instance Excel, mais avec un navigateur à la place.
   et bloque volontairement la sortie (F11/Esc ne fonctionnent pas, seul Alt+F4 ferme la fenêtre)
   — `--start-fullscreen` donne le même rendu visuel mais F11 bascule normalement en fenêtré, donc
   tu peux ressortir et déplacer la fenêtre à la main si besoin.
+- Ajoute `--allow-file-access-from-files` : c'est ce qui permet à `situation-avions.html` de se
+  relire lui-même sur disque toutes les 5s (`fetch`) sans recharger toute la page -- Chrome/Edge
+  bloquent `fetch()` entre fichiers locaux par défaut, ce qui forçait le rechargement complet (le
+  flash visible toutes les 5s que tu as signalé) tant que ce drapeau n'était pas là.
 - Si ni Chrome ni Edge n'est trouvé à un emplacement standard : ouvre avec le navigateur par
   défaut (`FollowHyperlink`) sans position/plein écran automatique — à faire à la main la
   première fois dans ce cas.
@@ -81,7 +85,7 @@ Sub LancerTV()
     If browserPath <> "" Then
         Dim cmd As String
         cmd = """" & browserPath & """ --new-window --window-position=" & tvOffsetX & "," & tvOffsetY & _
-              " --start-fullscreen """ & fileUrl & """"
+              " --start-fullscreen --allow-file-access-from-files """ & fileUrl & """"
         Shell cmd, vbNormalFocus
     Else
         ThisWorkbook.FollowHyperlink htmlPath
@@ -151,10 +155,13 @@ nouvelle.
 Je n'ai pas de Windows/Chrome/Edge disponible dans cet environnement pour tester réellement le
 `Shell` et le positionnement multi-écran — c'est une technique standard (arguments de ligne de
 commande Chrome/Edge documentés), mais à valider chez toi :
-- Si `--window-position`/`--start-fullscreen` sont ignorés (ça arrive quand une fenêtre Chrome
-  utilisant le même profil est déjà ouverte ailleurs : Chrome route parfois le nouveau lancement
-  vers le processus existant plutôt que d'en créer un nouveau avec les mêmes options) : dis-le-moi,
-  la solution est d'ajouter `--user-data-dir="C:\...\ChromeTV"` à la commande pour forcer un profil
-  dédié, garantissant une fenêtre neuve qui respecte les options.
+- Si `--window-position`/`--start-fullscreen`/`--allow-file-access-from-files` sont ignorés (ça
+  arrive quand une fenêtre Chrome utilisant le même profil est déjà ouverte ailleurs : Chrome
+  route parfois le nouveau lancement vers le processus existant plutôt que d'en créer un nouveau
+  avec les mêmes options) : dis-le-moi, la solution est d'ajouter `--user-data-dir="C:\...\ChromeTV"`
+  à la commande pour forcer un profil dédié, garantissant une fenêtre neuve qui respecte les
+  options. Signe que c'est ce qui se passe : le flash plein écran revient toutes les 5s malgré la
+  mise à jour de `situation-avions-template.html` (le rafraîchissement retombe alors sur son repli
+  `location.reload()` faute de pouvoir lire le fichier localement).
 - Si ton PC utilise un layout d'écrans qui n'est pas "TV à droite, même hauteur" : ajuste
   `tvOffsetX`/`tvOffsetY` avec les vraies coordonnées (Windows Paramètres d'affichage).
