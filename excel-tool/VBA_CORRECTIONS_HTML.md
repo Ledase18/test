@@ -188,17 +188,17 @@ End Sub
 
 ## 2. `piste - V3.xlsm` — Module1 : appel dans `ArchiverDispoDuJour`
 
-Même point d'ancrage que `PousserRafraichissementVisu` (voir
-`VBA_CORRECTIONS_RAFRAICHISSEMENT.md`) — ça couvre `Workbook_Open`, `Workbook_BeforeClose` et
-`Actualiser_Click` d'un coup, puisque les trois appellent déjà `ArchiverDispoDuJour`.
+Point d'ancrage : ça couvre `Workbook_Open`, `Workbook_BeforeClose` et `Actualiser_Click` d'un
+coup, puisque les trois appellent déjà `ArchiverDispoDuJour`.
+
+> Visu.xlsm étant retiré (voir `VBA_CORRECTIONS_RETRAIT_VISU.md`), il n'y a plus d'appel à
+> `PousserRafraichissementVisu` ici — seul `GenererHTMLSituation` reste.
 
 **Avant** (fin de la procédure) :
 ```vba
     ActiveWorkbook.Save
     Workbooks(myName).Activate
     ActiveWorkbook.Save
-
-    Call PousserRafraichissementVisu
 
     Application.ScreenUpdating = True
     Application.DisplayAlerts = True
@@ -211,7 +211,6 @@ Même point d'ancrage que `PousserRafraichissementVisu` (voir
     Workbooks(myName).Activate
     ActiveWorkbook.Save
 
-    Call PousserRafraichissementVisu
     Call GenererHTMLSituation
 
     Application.ScreenUpdating = True
@@ -229,8 +228,6 @@ Le bouton **Valider** — point d'entrée principal des changements de statut av
     ActiveWorkbook.Save
     Application.DisplayAlerts = True
 
-    Call PousserRafraichissementVisu
-
 Application.ScreenUpdating = True
 End Sub
 ```
@@ -241,7 +238,6 @@ End Sub
     ActiveWorkbook.Save
     Application.DisplayAlerts = True
 
-    Call PousserRafraichissementVisu
     Call GenererHTMLSituation
 
 Application.ScreenUpdating = True
@@ -250,8 +246,7 @@ End Sub
 
 ## Mise en place
 
-1. Dépose `situation-avions-template.html` dans le même dossier que `piste - V3.xlsm`
-   (et `Visu.xlsm`).
+1. Dépose `situation-avions-template.html` dans le même dossier que `piste - V3.xlsm`.
 2. Colle les 3 blocs VBA ci-dessus dans l'éditeur VBA de `piste - V3.xlsm`.
 3. Sauvegarde, ouvre le classeur, clique **Valider** (ou **Actualiser**) une fois : un fichier
    `situation-avions.html` doit apparaître dans le même dossier.

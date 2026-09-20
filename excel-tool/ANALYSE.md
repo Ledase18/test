@@ -25,6 +25,17 @@ ce que ma validation initiale n'avait pas couvert, d'où le bug passé inaperçu
 `piste - V3.xlsm` entre DEM VAL et Masquer, sur `Situation` et `Gestion` — détails, choix de
 placement et VBA à coller dans `VBA_CORRECTIONS_ROUES.md`.
 
+**Évolution du 20/09 — Visu.xlsm remplacé par un export HTML** : `Visu.xlsm` (deuxième instance
+Excel pilotée par `GetObject`) est retiré du pipeline de rafraîchissement. À la place, la macro
+`GenererHTMLSituation` (Module1) lit `Situation!B7:S31` (mapping colonnes confirmé sur le fichier
+réel : B=AVION, D=Pos., E=Camp., F=O2, G=AM, H=PM, I=VDN, J=PTR, K=AVQ, L=PLEIN, N=V, O=OBSERVATIONS,
+S=Masquer, + date Kannad en V23), injecte les données dans le template
+`situation-avions-template.html` (thème visuel façon Airbus) et écrit `situation-avions.html` à
+côté du classeur, à chaque Actualiser/Valider. Le fichier généré se recharge lui-même toutes les
+30 s dans le navigateur de la TV. Détails, VBA complet et vérifications faites avant livraison
+dans `VBA_CORRECTIONS_HTML.md` ; retrait des appels `PousserRafraichissementVisu` devenus inutiles
+dans `VBA_CORRECTIONS_RETRAIT_VISU.md`.
+
 ## 1. Fonctionnement d'ensemble
 
 Outil de suivi de disponibilité/occupation des postes de stationnement avion sur une piste

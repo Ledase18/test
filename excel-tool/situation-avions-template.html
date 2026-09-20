@@ -427,8 +427,8 @@
     h += chip("AM", a.am, a.am === "VOL" ? "info" : "neutral");
     h += chip("PM", a.pm, a.pm === "VOL" ? "info" : "neutral");
     h += chip("VDN", a.vdn, a.vdn === "VOL" ? "info" : "neutral");
-    h += chip("PTR", a.ptr, a.ptr === "I" ? "crit" : "ok");
-    h += chip("AVQ", a.avq, a.avq === "I" ? "crit" : "ok");
+    h += chip("PTR", a.ptr, a.ptr === "I" ? "crit" : "neutral");
+    h += chip("AVQ", a.avq, a.avq === "I" ? "crit" : "neutral");
     h += chip("Plein", a.plein, pleinColor(a));
     return h;
   }
