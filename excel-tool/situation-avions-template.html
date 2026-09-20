@@ -1,86 +1,35 @@
 <title>Situation Avions</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Titillium+Web:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Titillium+Web:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
+  /* Thème unique façon panneau d'affichage aéroport (FIDS) : toujours sombre,
+     pas de bascule clair/sombre -- un vrai panneau n'a pas de "mode clair". */
   :root{
     --navy-900:#001b3a;
-    --navy-800:#062a52;
+    --navy-800:#0a2c53;
     --navy-700:#0d3a6b;
     --sky-500:#00a8e1;
     --sky-300:#7fd4f0;
-    --bg:#eef2f7;
-    --surface:#ffffff;
-    --surface-2:#f6f8fb;
-    --ink:#0b1626;
-    --muted:#57667c;
-    --line:#dbe3ee;
-    --ok-600:#178a52;
-    --ok-100:#e2f6ea;
-    --ok-wash:#f2faf5;
-    --warn-600:#c96a02;
-    --warn-100:#fcedd9;
-    --warn-wash:#fdf7ee;
-    --crit-600:#c0362f;
-    --crit-100:#fbe6e4;
-    --crit-wash:#fdf1f0;
-    --info-600:#0b6fa8;
-    --info-100:#e1f3fb;
-    --info-wash:#f0f8fc;
-    --neutral-600:#5b6b82;
-    --neutral-100:#eef1f5;
+    --bg:#070f1c;
+    --surface:#101c30;
+    --surface-2:#0b1526;
+    --ink:#eef3fb;
+    --muted:#8ea0bd;
+    --line:#1f2f47;
+    --ok-600:#3ddc84;
+    --ok-100:#0e2a20;
+    --warn-600:#ffb454;
+    --warn-100:#332508;
+    --crit-600:#ff6259;
+    --crit-100:#3a1310;
+    --info-600:#5ec8ff;
+    --info-100:#0c2536;
+    --neutral-600:#8ea0bd;
+    --neutral-100:#16222f;
     --font-display:'Barlow Condensed',system-ui,sans-serif;
     --font-body:'Titillium Web',system-ui,sans-serif;
-  }
-  @media (prefers-color-scheme: dark){
-    :root:not([data-theme="light"]){
-      --bg:#0a1220;
-      --surface:#101b2d;
-      --surface-2:#0d1826;
-      --ink:#e8edf5;
-      --muted:#93a3ba;
-      --line:#1f2f47;
-      --navy-900:#001b3a;
-      --navy-800:#0a2c53;
-      --ok-600:#57d996;
-      --ok-100:#0e2a20;
-      --ok-wash:#0c1e18;
-      --warn-600:#f0b355;
-      --warn-100:#332508;
-      --warn-wash:#241c0e;
-      --crit-600:#ff8b83;
-      --crit-100:#3a1310;
-      --crit-wash:#271512;
-      --info-600:#6fc6f2;
-      --info-100:#0c2536;
-      --info-wash:#0d1e2a;
-      --neutral-600:#93a3ba;
-      --neutral-100:#16222f;
-    }
-  }
-  :root[data-theme="dark"]{
-    --bg:#0a1220;
-    --surface:#101b2d;
-    --surface-2:#0d1826;
-    --ink:#e8edf5;
-    --muted:#93a3ba;
-    --line:#1f2f47;
-    --navy-900:#001b3a;
-    --navy-800:#0a2c53;
-    --ok-600:#57d996;
-    --ok-100:#0e2a20;
-    --ok-wash:#0c1e18;
-    --warn-600:#f0b355;
-    --warn-100:#332508;
-    --warn-wash:#241c0e;
-    --crit-600:#ff8b83;
-    --crit-100:#3a1310;
-    --crit-wash:#271512;
-    --info-600:#6fc6f2;
-    --info-100:#0c2536;
-    --info-wash:#0d1e2a;
-    --neutral-600:#93a3ba;
-    --neutral-100:#16222f;
+    --font-mono:'IBM Plex Mono',ui-monospace,monospace;
   }
 
   body{
@@ -149,10 +98,8 @@
     font-weight:800;
     font-size:30px;
     letter-spacing:0.5px;
-    color:var(--navy-900);
+    color:var(--ink);
   }
-  :root:not([data-theme="light"]) .titlebar h1{color:var(--ink)}
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .titlebar h1{color:var(--ink)}}
   .kannad-pill{text-align:right; flex:none}
   .kannad-pill .lbl{
     display:block;
@@ -169,10 +116,8 @@
     font-weight:700;
     font-size:17px;
     font-variant-numeric:tabular-nums;
-    color:var(--navy-800);
+    color:var(--sky-300);
   }
-  :root:not([data-theme="light"]) .kannad-pill .val{color:var(--sky-300)}
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .kannad-pill .val{color:var(--sky-300)}}
 
   /* ---------- legend ---------- */
   .legend{
@@ -196,121 +141,84 @@
   .dot.ok{background:var(--ok-600)}
   .dot.neutral{background:var(--neutral-600)}
 
-  /* ---------- aircraft list ---------- */
-  .list{
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    padding:0 14px 22px;
-  }
-  .row{
-    background:var(--surface);
+  /* ---------- aircraft board (façon panneau d'affichage aéroport) ---------- */
+  .board-table{
+    display:grid;
+    grid-template-columns: 118px 58px 70px 50px 50px 84px 96px 1fr;
+    margin:0 14px 22px;
     border:1px solid var(--line);
-    border-left:11px solid var(--neutral-600);
     border-radius:10px;
-    padding:12px 14px 12px 12px;
+    overflow:hidden;
+  }
+  .bt-head{
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:10px;
+    letter-spacing:1px;
+    text-transform:uppercase;
+    color:var(--muted);
+    background:var(--navy-900);
+    padding:8px 10px;
+    border-bottom:2px solid var(--sky-500);
+    white-space:nowrap;
+  }
+  .bt-cell{
+    font-family:var(--font-mono);
+    font-size:14px;
+    font-weight:600;
+    padding:8px 10px;
     display:flex;
-    gap:14px;
-    align-items:flex-start;
+    align-items:center;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
   }
-  .row.crit{border-left-color:var(--crit-600)}
-  .row.warn{border-left-color:var(--warn-600)}
-  .row.info{border-left-color:var(--info-600)}
-  .row.ok{border-left-color:var(--ok-600)}
-
-  .idblock{
-    flex:none;
-    width:104px;
-    text-align:left;
+  .bt-cell.row-odd{background:var(--surface)}
+  .bt-cell.row-even{background:var(--surface-2)}
+  .bt-cell.obs-cell{
+    font-family:var(--font-body);
+    font-weight:400;
+    font-size:12.5px;
+    line-height:1.35;
+    white-space:normal;
+    color:var(--ink);
   }
-  .tail{
+  .bt-cell.tail-cell{
     font-family:var(--font-display);
     font-weight:800;
-    font-size:24px;
-    line-height:1;
+    font-size:18px;
     letter-spacing:0.5px;
-    font-variant-numeric:tabular-nums;
+    gap:6px;
   }
-  .pos{
-    margin-top:4px;
+  .bt-pos{
     display:inline-block;
     font-family:var(--font-body);
     font-weight:700;
     font-size:12px;
-    color:var(--navy-800);
-    background:var(--surface-2);
-    border:1px solid var(--line);
-    border-radius:6px;
+    color:var(--sky-300);
+    background:rgba(0,168,225,0.14);
+    border:1px solid rgba(0,168,225,0.35);
+    border-radius:5px;
     padding:2px 7px;
   }
-  :root:not([data-theme="light"]) .pos{color:var(--sky-300)}
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pos{color:var(--sky-300)}}
-
-  .chips{
-    flex:1 1 auto;
-    min-width:0;
-    display:flex;
-    flex-wrap:wrap;
-    align-content:flex-start;
-    gap:5px 6px;
-  }
-  .chip{
-    display:inline-flex;
-    align-items:baseline;
-    gap:4px;
-    font-size:11.5px;
-    font-weight:600;
-    border-radius:6px;
-    padding:3px 7px;
-    line-height:1.3;
-    white-space:nowrap;
-  }
-  .chip .k{
-    font-size:9.5px;
+  .bt-statut{
+    font-family:var(--font-body);
+    font-weight:700;
+    font-size:11px;
     letter-spacing:0.5px;
     text-transform:uppercase;
-    opacity:0.72;
   }
-  .chip .v{font-family:var(--font-display);font-weight:700;font-size:13px}
-  .chip.neutral{background:var(--neutral-100);color:var(--neutral-600)}
-  .chip.crit{background:var(--crit-100);color:var(--crit-600)}
-  .chip.warn{background:var(--warn-100);color:var(--warn-600)}
-  .chip.info{background:var(--info-100);color:var(--info-600)}
-  .chip.ok{background:var(--ok-100);color:var(--ok-600)}
+  .txt-crit{color:var(--crit-600)}
+  .txt-warn{color:var(--warn-600)}
+  .txt-info{color:var(--info-600)}
+  .txt-ok{color:var(--ok-600)}
+  .txt-neutral{color:var(--muted)}
 
-  .obs{
-    flex:1 1 230px;
-    max-width:260px;
-    align-self:flex-start;
-    margin-top:-4px;
-    font-size:12.5px;
-    line-height:1.4;
-    color:var(--ink);
-    border-left:1px solid var(--line);
-    padding-left:12px;
-  }
-  .obs .k{
-    display:block;
-    font-family:var(--font-display);
-    font-weight:700;
-    font-size:10.5px;
-    letter-spacing:1px;
-    text-transform:uppercase;
-    color:var(--muted);
-    margin-bottom:2px;
-  }
-
-  .vest{
-    flex:none;
-    align-self:flex-start;
-    font-size:10.5px;
-    font-weight:700;
-    color:var(--warn-600);
-    background:var(--warn-100);
-    border-radius:6px;
-    padding:3px 6px;
-    text-align:center;
-    line-height:1.15;
+  @media (max-width:640px){
+    .board-table{grid-template-columns: 100px 50px 60px 42px 42px 72px 84px 1fr}
+    .bt-cell{font-size:12.5px; padding:7px 8px}
+    .bt-cell.tail-cell{font-size:16px}
   }
 
   /* ---------- plan de stationnement ---------- */
@@ -319,11 +227,9 @@
     font-weight:700;
     font-size:18px;
     letter-spacing:0.5px;
-    color:var(--navy-900);
+    color:var(--ink);
     padding:2px 20px 10px;
   }
-  :root:not([data-theme="light"]) .section-title{color:var(--ink)}
-  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .section-title{color:var(--ink)}}
 
   .apron{
     margin:0 14px 22px;
@@ -366,11 +272,6 @@
   }
   .lavage-box{fill:var(--surface-2);stroke:var(--line);stroke-width:2}
   .lavage-label{font-family:var(--font-body);font-weight:700;font-size:12px;fill:var(--muted)}
-
-  @media (max-width:420px){
-    .idblock{width:76px}
-    .tail{font-size:21px}
-  }
 </style>
 
 <div class="board">
@@ -394,7 +295,7 @@
     <span class="legend-item"><span class="dot ok"></span>Prêt</span>
   </div>
 
-  <div class="list" id="list"></div>
+  <div class="board-table" id="list"></div>
 
   <div class="section-title">Plan de stationnement</div>
   <div class="apron" id="apron"></div>
@@ -416,22 +317,6 @@
     if (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL") return "info";
     return "ok";
   }
-  function chip(label, value, cls){
-    if (!value) return "";
-    return `<span class="chip ${cls}"><span class="k">${label}</span><span class="v">${value}</span></span>`;
-  }
-  function chipsFor(a){
-    let h = "";
-    h += chip("O2", a.o2 ? "X" : "", "info");
-    h += chip("Camp", a.camp ? "X" : "", "neutral");
-    h += chip("AM", a.am, a.am === "VOL" ? "info" : "neutral");
-    h += chip("PM", a.pm, a.pm === "VOL" ? "info" : "neutral");
-    h += chip("VDN", a.vdn, a.vdn === "VOL" ? "info" : "neutral");
-    h += chip("PTR", a.ptr, a.ptr === "I" ? "crit" : "neutral");
-    h += chip("AVQ", a.avq, a.avq === "I" ? "crit" : "neutral");
-    h += chip("Plein", a.plein, pleinColor(a));
-    return h;
-  }
   // Couleur du plein : bleu en vol ; "V" (validé, feuille gestion) -> vert même
   // sans quantité renseignée ; sinon quantité sans V -> orange ; rien/INC -> rouge.
   function pleinColor(a){
@@ -440,24 +325,37 @@
     if (!a.plein || a.plein === "INC") return "crit";
     return "warn";
   }
+  const STATUT_LABEL = {crit:"Indispo", info:"Vol", ok:"Prêt"};
 
   // Un avion masqué (Masquer = "x" sur Situation) sort du tableau ET du plan de
   // stationnement -- il reste dans les données mais n'est plus affiché sur Visu.
   const VISIBLE = AIRCRAFT.filter(a => !a.masque);
 
-  const list = document.getElementById("list");
-  list.innerHTML = VISIBLE.map(a => {
+  const HEAD = ["Immat.", "Pos.", "Prog.", "PTR", "AVQ", "Plein", "Statut", "Observations"];
+  let tableHtml = HEAD.map(h => `<div class="bt-head">${h}</div>`).join("");
+
+  tableHtml += VISIBLE.map((a, i) => {
     const st = stateOf(a);
-    return `
-      <div class="row ${st}">
-        <div class="idblock">
-          <div class="tail">${a.tail}</div>
-          ${a.pos ? `<span class="pos">${a.pos}</span>` : ""}
-        </div>
-        <div class="chips">${chipsFor(a)}</div>
-        ${a.obs ? `<div class="obs"><span class="k">Obs.</span>${a.obs}</div>` : ""}
-      </div>`;
+    const parity = i % 2 === 0 ? "row-odd" : "row-even";
+    const cell = (cls, content) => `<div class="bt-cell ${parity} ${cls || ""}">${content}</div>`;
+
+    const prog = (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL")
+      ? `<span class="txt-info">VOL</span>`
+      : (a.am || a.pm || a.vdn || `<span class="txt-neutral">&mdash;</span>`);
+
+    return (
+      cell(`tail-cell txt-${st}`, a.tail) +
+      cell("", a.pos ? `<span class="bt-pos">${a.pos}</span>` : "") +
+      cell("", prog) +
+      cell("", a.ptr ? `<span class="${a.ptr === "I" ? "txt-crit" : "txt-neutral"}">${a.ptr}</span>` : "") +
+      cell("", a.avq ? `<span class="${a.avq === "I" ? "txt-crit" : "txt-neutral"}">${a.avq}</span>` : "") +
+      cell("", a.plein ? `<span class="txt-${pleinColor(a)}">${a.plein}</span>` : "") +
+      cell("bt-statut", `<span class="txt-${st}">${STATUT_LABEL[st]}</span>`) +
+      cell("obs-cell", a.obs || "")
+    );
   }).join("");
+
+  document.getElementById("list").innerHTML = tableHtml;
 
   // ---------- plan de stationnement ----------
   // Schéma reconstitué à partir d'une capture du plan Visu existant (voie en
