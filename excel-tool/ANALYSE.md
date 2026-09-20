@@ -32,7 +32,7 @@ réel : B=AVION, D=Pos., E=Camp., F=O2, G=AM, H=PM, I=VDN, J=PTR, K=AVQ, L=PLEIN
 S=Masquer, + date Kannad en V23), injecte les données dans le template
 `situation-avions-template.html` (thème visuel façon Airbus) et écrit `situation-avions.html` à
 côté du classeur, à chaque Actualiser/Valider. Le fichier généré se recharge lui-même toutes les
-30 s dans le navigateur de la TV. Détails, VBA complet et vérifications faites avant livraison
+5 s dans le navigateur de la TV. Détails, VBA complet et vérifications faites avant livraison
 dans `VBA_CORRECTIONS_HTML.md` ; retrait des appels `PousserRafraichissementVisu` devenus inutiles
 dans `VBA_CORRECTIONS_RETRAIT_VISU.md`.
 

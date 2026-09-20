@@ -12,7 +12,7 @@ VBA, plus un fichier HTML à déposer à côté.
   remplace par les vraies valeurs.
 - `situation-avions.html` — le fichier **généré**, écrit dans le même dossier par la macro à
   chaque rafraîchissement. C'est lui que le navigateur de la TV doit ouvrir/garder ouvert (il se
-  recharge tout seul toutes les 30 s pour prendre en compte la dernière version écrite).
+  recharge tout seul toutes les 5 s pour prendre en compte la dernière version écrite).
 
 Ne modifie jamais `situation-avions.html` à la main — il est écrasé à chaque export. Les
 retouches de mise en forme se font dans `situation-avions-template.html`.
@@ -251,7 +251,7 @@ End Sub
 3. Sauvegarde, ouvre le classeur, clique **Valider** (ou **Actualiser**) une fois : un fichier
    `situation-avions.html` doit apparaître dans le même dossier.
 4. Ouvre ce fichier dans le navigateur destiné à la TV, laisse-le affiché : il se recharge tout
-   seul toutes les 30 s, donc les rafraîchissements suivants (nouveaux Valider/Actualiser)
+   seul toutes les 5 s, donc les rafraîchissements suivants (nouveaux Valider/Actualiser)
    apparaissent sans rien rouvrir à la main.
 
 ## Vérifié avant livraison
