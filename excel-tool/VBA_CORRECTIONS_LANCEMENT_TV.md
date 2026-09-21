@@ -52,6 +52,7 @@ Ajoute ce bloc à la suite de `GenererHTMLSituation` :
 
 Private Declare PtrSafe Function GetSystemMetrics Lib "user32" (ByVal nIndex As Long) As Long
 Private Const SM_CXSCREEN As Long = 0
+Private Declare PtrSafe Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 
 ' PID du navigateur lancé par LancerTV, utilisé par FermerTV pour le fermer.
 ' Public (pas juste module) car les boutons Situation/Gestion doivent tous les
@@ -124,6 +125,19 @@ Sub LancerTV()
         ' navigateur par défaut, hors de notre contrôle) -- FermerTV ne pourra
         ' pas fermer cette fenêtre-là automatiquement.
     End If
+
+    ' Rend la main à piste-V3 : le navigateur (vbNormalFocus, ou le navigateur
+    ' par défaut via FollowHyperlink) passe au premier plan une fois sa fenêtre
+    ' ouverte, ce qui laisse Excel en arrière-plan. Sleep laisse le temps à
+    ' cette fenêtre de s'afficher et de prendre le focus avant qu'on le
+    ' reprenne -- sans ce délai, AppActivate s'exécuterait avant que le
+    ' navigateur n'ait fini de s'activer, qui reprendrait la main juste après.
+    ' Corrige aussi le double-clic nécessaire ensuite sur ImageOffSit/
+    ' ImageOffGest : tant qu'Excel n'a pas le focus, le 1er clic sur son
+    ' contrôle ActiveX ne fait que réactiver la fenêtre Excel (comportement
+    ' Windows standard), le 2e seulement atteint réellement le contrôle.
+    Sleep 800
+    AppActivate Application.Caption
 
     Exit Sub
 
@@ -247,6 +261,89 @@ Pas besoin de VBA supplémentaire pour les boutons eux-mêmes : un bouton de for
 `*_Click()` séparé n'est nécessaire (ce mécanisme est différent des contrôles ActiveX, qui eux
 exigeraient un `Private Sub NomDuBouton_Click()` dans le module de la feuille).
 
+**En pratique** : plutôt que des boutons de formulaire, les boutons ont été ajoutés en contrôles
+ActiveX Image (`ImageOnSit`/`ImageOffSit` sur Situation -- module `Feuil2` --, `ImageOnGest`/
+`ImageOffGest` sur Gestion -- module `Feuil3`), cohérent avec le style déjà en place sur ce
+classeur (`Actualiser`, `exit1`, `Exit2`... sont aussi des Image ActiveX). Ça marche tout aussi
+bien, avec la nuance ci-dessous sur l'événement à utiliser.
+
+## Corrections suite aux tests (double-clic, focus, fermeture par la croix)
+
+Trois points remontés après un premier test réel :
+
+**1. Double-clic nécessaire sur `ImageOffSit` pour couper la TV.** Cause : le code collé
+utilisait l'événement `MouseDown` au lieu de `Click` --
+
+```vba
+Private Sub ImageOffSit_MouseDown(ByVal Button As Integer, ByVal Shift As Integer, ByVal X As Single, ByVal Y As Single)
+Call FermerTV
+End Sub
+```
+
+-- alors que `ImageOnGest`/`ImageOffGest` (Gestion) utilisent déjà `Click`, comme tous les autres
+boutons du classeur. Au-delà du double-clic, `MouseDown` sans filtrer `Button` se déclenche aussi
+sur un **clic droit**, ce qui fermerait la TV par accident. À remplacer dans le module `Feuil2`
+par :
+
+```vba
+Private Sub ImageOffSit_Click()
+Call FermerTV
+End Sub
+```
+
+(Supprime l'ancienne `ImageOffSit_MouseDown` en entier -- garde juste ce `_Click`.)
+
+**2. Focus resté sur la fenêtre TV après le lancement, et cause probable du double-clic.**
+`Shell(cmd, vbNormalFocus)` donne le focus au navigateur dès que sa fenêtre s'affiche -- Excel
+repasse en arrière-plan. C'est très probablement la vraie cause du point 1 aussi : tant qu'une
+fenêtre Windows n'a pas le focus, cliquer sur un de ses contrôles ActiveX ne fait, au premier
+clic, que réactiver la fenêtre (comportement standard Windows, pas un bug Excel) -- le clic
+suivant seulement atteint le contrôle. `ImageOnSit` n'en souffre pas parce qu'au moment où tu
+cliques dessus, Excel a déjà le focus (rien ne l'en a fait sortir) ; `ImageOffSit` en souffre
+parce que tu cliques juste après que la TV a pris le focus. Le correctif (`Sleep 800` +
+`AppActivate Application.Caption`, ajouté à la fin de `LancerTV` ci-dessus) redonne la main à
+piste-V3 automatiquement dès que la fenêtre TV est ouverte -- ça couvre le point 2 directement, et
+devrait faire disparaître le point 1 par la même occasion (à confirmer chez toi ; si le double-clic
+persiste malgré tout après ce correctif, le remplacement `MouseDown` → `Click` du point 1 reste
+nécessaire de toute façon).
+
+**3. Fermer piste-V3 (croix de la fenêtre) doit aussi couper la TV.** `Workbook_BeforeClose`
+n'appelle actuellement pas `FermerTV` -- fermer piste-V3 par la croix laisse le navigateur TV
+tourner tout seul. Ajoute `Call FermerTV` dans `ThisWorkbook`, `Workbook_BeforeClose` :
+
+**Avant** :
+```vba
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+
+Dim FichierSource As Workbook
+Dim MyPath, myName As String
+Dim i, j As Integer
+   Call ArchiverDispoDuJour
+If WbOpen("Dispo_" & Format(Now(), "YYYY-MM-DD") & ".xlsx") = True Then Workbooks("Dispo_" & Format(Now(), "YYYY-MM-DD") & ".xlsx").Close True
+ActiveWorkbook.Save
+End Sub
+```
+
+**Après** :
+```vba
+Private Sub Workbook_BeforeClose(Cancel As Boolean)
+
+Dim FichierSource As Workbook
+Dim MyPath, myName As String
+Dim i, j As Integer
+   Call FermerTV
+   Call ArchiverDispoDuJour
+If WbOpen("Dispo_" & Format(Now(), "YYYY-MM-DD") & ".xlsx") = True Then Workbooks("Dispo_" & Format(Now(), "YYYY-MM-DD") & ".xlsx").Close True
+ActiveWorkbook.Save
+End Sub
+```
+
+`FermerTV` place `Call FermerTV` avant `ArchiverDispoDuJour` volontairement : `FermerTV` a sa
+propre gestion d'erreur interne (elle ne peut pas faire échouer la fermeture de piste-V3), donc
+autant garantir que la TV est coupée même si l'archivage du jour lève un problème ensuite. Le
+bouton OFF (`ImageOffSit_Click`/`ImageOffGest_Click`) coupe déjà la TV via ce même `FermerTV`,
+donc ce point ne concerne que la fermeture par la croix.
+
 ## Point non vérifiable d'ici
 
 Je n'ai pas de Windows/Chrome/Edge disponible dans cet environnement pour tester réellement le
@@ -260,3 +357,8 @@ Je n'ai pas de Windows/Chrome/Edge disponible dans cet environnement pour tester
   moment du saut. Dis-moi ce qui s'affiche (ou une capture) — ça me dira si `fetch` échoue pour
   une autre raison (chemin de fichier incorrect, fichier verrouillé pendant l'écriture VBA...) et
   je pourrai corriger précisément plutôt que deviner un correctif de plus.
+- **`Sleep 800` dans `LancerTV`** : délai choisi au jugé (le temps qu'une fenêtre Chrome/Edge
+  s'affiche et prenne le focus sur un PC "normal") -- si le focus revient à Excel *avant* que la
+  TV n'ait fini de s'afficher, ou au contraire si la TV garde encore le focus après, augmente ou
+  diminue cette valeur (en millisecondes) selon ce que tu observes chez toi. Pas de moyen fiable
+  de le déterminer sans tester sur ta machine réelle.
