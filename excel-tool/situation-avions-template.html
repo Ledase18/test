@@ -59,7 +59,7 @@
   .wordmark{
     font-family:var(--font-display);
     font-weight:800;
-    font-size:36px;
+    font-size:42px;
     letter-spacing:2px;
     line-height:1;
   }
@@ -235,7 +235,7 @@
   .plan-title{
     font-family:var(--font-display);
     font-weight:700;
-    font-size:19px;
+    font-size:23px;
     letter-spacing:0.3px;
     fill:var(--ink);
   }
@@ -485,12 +485,40 @@
     });
 
     document.getElementById("apron").innerHTML = `<svg viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg">
-      <text class="plan-title" x="12" y="22">Plan de stationnement</text>
+      <text class="plan-title" x="12" y="26">Plan de stationnement</text>
       <g>${combLines}</g>
       <g>${combSlots}</g>
       <g>${lavageHtml}</g>
       <g>${podsHtml}</g>
     </svg>`;
+
+    fitApron();
+  }
+
+  // Ajuste la taille du plan à l'espace vertical qui reste sous le tableau --
+  // plutôt qu'une taille fixe, ça remplit l'écran quand il y a peu d'avions
+  // (tableau court) et rétrécit automatiquement le plan quand il y en a
+  // beaucoup (jusqu'à 14), au lieu de laisser du vide ou de déborder. Appelée
+  // à chaque render() (donc à chaque rafraîchissement toutes les 5s, dès que
+  // le nombre d'avions change) et au redimensionnement de la fenêtre.
+  function fitApron(){
+    const svg = document.querySelector(".apron svg");
+    const apronEl = document.getElementById("apron");
+    if (!svg || !apronEl) return;
+
+    const ASPECT = 1000 / 440; // largeur / hauteur du viewBox du plan
+    const MIN_W = 340, MAX_W = 900;
+    const BOTTOM_MARGIN = 14; // respiration sous le plan
+    const PAD_BORDER = 2 * (12 + 1); // padding + bordure de .apron (haut+bas)
+
+    const top = apronEl.getBoundingClientRect().top;
+    const availH = window.innerHeight - top - PAD_BORDER - BOTTOM_MARGIN;
+    const containerW = apronEl.clientWidth - 2 * 12; // largeur dispo hors padding
+
+    let w = Math.max(MIN_W, availH * ASPECT);
+    w = Math.min(w, MAX_W, containerW);
+
+    svg.style.maxWidth = Math.round(w) + "px";
   }
 
   // Le bloc entre les deux marqueurs est régénéré intégralement par la macro
@@ -541,4 +569,9 @@
     }
   }
   setInterval(refreshData, 5000);
+
+  // Redimensionnement de la fenêtre (rare en TV plein écran, mais gratuit à
+  // gérer) : on ne fait que réajuster la taille du plan, pas un render()
+  // complet (pas de recalcul du tableau ni de flash).
+  window.addEventListener("resize", fitApron);
 </script>
