@@ -218,7 +218,7 @@
   .txt-warn{color:var(--warn-600)}
   .txt-info{color:var(--info-600)}
   .txt-ok{color:var(--ok-600)}
-  .txt-purple{color:var(--purple-600)}
+  .txt-ext{color:var(--purple-600)}
   .txt-neutral{color:var(--muted)}
 
   @media (max-width:640px){
@@ -389,7 +389,7 @@
       const cell = (cls, content) => `<div class="bt-cell ${parity} ${cls || ""}">${content}</div>`;
 
       const prog = (a.am === "EXT" || a.pm === "EXT" || a.vdn === "EXT")
-        ? `<span class="txt-purple">EXT</span>`
+        ? `<span class="txt-ext">EXT</span>`
         : (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL")
         ? `<span class="txt-info">VOL</span>`
         : (a.am || a.pm || a.vdn || `<span class="txt-neutral">&mdash;</span>`);
