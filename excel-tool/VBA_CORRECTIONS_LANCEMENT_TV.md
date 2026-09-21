@@ -61,6 +61,12 @@ Private Const SM_CXSCREEN As Long = 0
 ' une variable Public ne survit pas à la fermeture du classeur), donc FermerTV
 ' ne pourra fermer que la fenêtre lancée par la session en cours.
 Public tvProcessID As Double
+' /!\ CETTE LIGNE EST INDISPENSABLE -- sans elle, LancerTV et FermerTV
+' compilent quand même (pas d'Option Explicit dans ce projet) mais chacune se
+' crée sa propre variable tvProcessID locale et invisible de l'autre : le PID
+' capturé par LancerTV disparaît à la fin de la Sub, et FermerTV voit toujours
+' 0 -> message "Aucune fenêtre TV n'a été lancée...". C'est exactement ce qui
+' se produit si tu as collé LancerTV/FermerTV sans cette déclaration.
 
 Sub LancerTV()
     On Error GoTo ErrHandler
