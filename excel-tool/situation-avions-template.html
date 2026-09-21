@@ -320,10 +320,13 @@
     if (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL") return "info";
     return "ok";
   }
-  // Couleur du plein (règle confirmée) : bleu en vol ; vert dès qu'il y a un "V"
-  // en colonne N, même sans PLEIN/TRG+Qté ; orange si PLEIN ET TRG+Qté renseignés
-  // mais pas encore de V ; rouge si PLEIN seul (sans TRG+Qté) ou rien du tout.
+  // Couleur du plein (règle confirmée) : violet en vol extérieur ; bleu en vol ;
+  // vert dès qu'il y a un "V" en colonne N, même sans PLEIN/TRG+Qté ; orange si
+  // PLEIN ET TRG+Qté renseignés mais pas encore de V ; rouge si PLEIN seul
+  // (sans TRG+Qté) ou rien du tout. Ne s'affiche que si la cellule Plein a une
+  // valeur -- un avion en EXT sans plein renseigné n'affiche donc toujours rien.
   function pleinColor(a){
+    if (a.am === "EXT" || a.pm === "EXT" || a.vdn === "EXT") return "ext";
     if (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL") return "info";
     if (a.v) return "ok";
     if (a.plein === "INC") return "crit";
