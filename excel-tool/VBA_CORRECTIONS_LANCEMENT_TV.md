@@ -29,6 +29,14 @@ dans une deuxième instance Excel, mais avec un navigateur à la place.
   les drapeaux ci-dessus** -- position, plein écran, et surtout l'accès fichier local, ce qui
   explique que le flash persistait malgré le drapeau ajouté au tour précédent. Un profil séparé
   force une fenêtre réellement neuve qui les respecte.
+- Ajoute `--disable-session-crashed-bubble` : `FermerTV` utilise `taskkill /F`, qui tue le
+  processus sans lui laisser le temps d'écrire dans son profil qu'il s'est arrêté proprement --
+  Chrome/Edge le prend donc pour un plantage et affiche au prochain lancement le bandeau "Chrome
+  ne s'est pas arrêté correctement, restaurer les pages ?". Ce drapeau supprime ce bandeau
+  purement et simplement, quelle que soit la cause de l'arrêt (`taskkill`, coupure de courant,
+  redémarrage du PC...) -- plus adapté ici qu'un arrêt "propre" (`taskkill` sans `/F`, qui demande
+  gentiment au processus de se fermer) : ce dernier resterait dépendant du temps de réponse du
+  navigateur, donc moins prévisible pour un bouton OFF censé réagir tout de suite.
 - Si ni Chrome ni Edge n'est trouvé à un emplacement standard : ouvre avec le navigateur par
   défaut (`FollowHyperlink`) sans position/plein écran automatique — à faire à la main la
   première fois dans ce cas.
@@ -115,7 +123,7 @@ Sub LancerTV()
         Dim cmd As String
         cmd = """" & browserPath & """ --user-data-dir=""" & profileDir & """ --new-window" & _
               " --window-position=" & tvOffsetX & "," & tvOffsetY & _
-              " --start-fullscreen --allow-file-access-from-files """ & fileUrl & """"
+              " --start-fullscreen --allow-file-access-from-files --disable-session-crashed-bubble """ & fileUrl & """"
         ' Shell() en fonction (pas juste "Shell cmd") pour récupérer le PID --
         ' nécessaire pour que FermerTV puisse fermer précisément cette fenêtre.
         tvProcessID = Shell(cmd, vbNormalFocus)
