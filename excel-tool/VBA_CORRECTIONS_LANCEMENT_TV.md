@@ -159,11 +159,12 @@ Sub FermerTV()
     If tvProcessID > 0 Then
         Shell "taskkill /PID " & tvProcessID & " /F", vbHide
         tvProcessID = 0
-    Else
-        MsgBox "Aucune fenêtre TV n'a été lancée par ce classeur depuis son ouverture " & _
-               "(ou elle a été ouverte via le navigateur par défaut, non fermable " & _
-               "automatiquement). Ferme-la manuellement si besoin.", vbInformation, "Fermer TV"
     End If
+    ' tvProcessID = 0 : aucune TV lancée depuis ce classeur dans cette session
+    ' (jamais lancée, déjà fermée, ou ouverte via le navigateur par défaut hors
+    ' de notre contrôle) -- ne rien faire, sans message, comme demandé : ce
+    ' n'est pas une erreur, c'est l'état normal la plupart du temps (ex. clic
+    ' sur OFF par réflexe sans avoir rallumé la TV).
 
     Exit Sub
 
