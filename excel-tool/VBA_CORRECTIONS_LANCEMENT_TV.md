@@ -29,14 +29,14 @@ dans une deuxième instance Excel, mais avec un navigateur à la place.
   les drapeaux ci-dessus** -- position, plein écran, et surtout l'accès fichier local, ce qui
   explique que le flash persistait malgré le drapeau ajouté au tour précédent. Un profil séparé
   force une fenêtre réellement neuve qui les respecte.
-- Ajoute `--disable-session-crashed-bubble` : `FermerTV` utilise `taskkill /F`, qui tue le
-  processus sans lui laisser le temps d'écrire dans son profil qu'il s'est arrêté proprement --
-  Chrome/Edge le prend donc pour un plantage et affiche au prochain lancement le bandeau "Chrome
-  ne s'est pas arrêté correctement, restaurer les pages ?". Ce drapeau supprime ce bandeau
-  purement et simplement, quelle que soit la cause de l'arrêt (`taskkill`, coupure de courant,
-  redémarrage du PC...) -- plus adapté ici qu'un arrêt "propre" (`taskkill` sans `/F`, qui demande
-  gentiment au processus de se fermer) : ce dernier resterait dépendant du temps de réponse du
-  navigateur, donc moins prévisible pour un bouton OFF censé réagir tout de suite.
+- Ajoute `--disable-session-crashed-bubble` : censé supprimer le bandeau "Chrome ne s'est pas
+  arrêté correctement, restaurer les pages ?" qu'affiche Chrome/Edge après un arrêt qu'il
+  considère anormal. **Insuffisant seul en pratique** sur les versions récentes de Chrome/Edge --
+  le vrai correctif est dans `FermerTV`, qui fait maintenant un arrêt "propre" (`taskkill` sans
+  `/F`, équivalent à un clic sur la croix, laisse Chrome écrire lui-même qu'il s'est arrêté
+  normalement) avant de forcer en filet de sécurité. Le drapeau reste en place en défense
+  complémentaire (coupure de courant, plantage réel, redémarrage du PC...), mais ne suffit plus à
+  lui seul contre un `taskkill /F` systématique.
 - Si ni Chrome ni Edge n'est trouvé à un emplacement standard : ouvre avec le navigateur par
   défaut (`FollowHyperlink`) sans position/plein écran automatique — à faire à la main la
   première fois dans ce cas.
@@ -156,16 +156,29 @@ End Sub
 
 ' ============================================================
 ' Fermeture TV -- termine le processus navigateur lancé par LancerTV
-' (identifié par tvProcessID). Utilise taskkill /F car Shell() ne donne pas de
-' handle de fenêtre exploitable pour un "clic sur la croix" propre -- /F tue le
-' process direct, sans confirmation ni sauvegarde à gérer côté navigateur
-' (aucune perte : situation-avions.html n'a pas d'état à sauvegarder).
+' (identifié par tvProcessID). taskkill /F seul déclenche systématiquement le
+' bandeau "Chrome ne s'est pas arrêté correctement" au lancement suivant, et
+' --disable-session-crashed-bubble ne suffit plus à le supprimer sur les
+' versions récentes de Chrome/Edge -- d'où l'arrêt en 2 temps ci-dessous.
 ' ============================================================
 Sub FermerTV()
     On Error GoTo ErrHandler
 
     If tvProcessID > 0 Then
+        ' 1) Fermeture "propre" -- taskkill SANS /F envoie WM_CLOSE aux
+        ' fenêtres du process, exactement comme un clic sur sa croix : Chrome
+        ' exécute alors son arrêt normal et écrit lui-même dans son profil
+        ' qu'il s'est fermé correctement (aucune confirmation à attendre côté
+        ' page, situation-avions.html n'a pas de gestionnaire beforeunload).
+        Shell "taskkill /PID " & tvProcessID, vbHide
+        Sleep 1000
+
+        ' 2) Filet de sécurité -- si la fenêtre n'a pas réagi dans le délai
+        ' ci-dessus (navigateur bloqué), on force. Si le process s'est déjà
+        ' fermé à l'étape 1, ce taskkill échoue juste silencieusement (rien à
+        ' tuer) : aucun effet, aucun message (vbHide).
         Shell "taskkill /PID " & tvProcessID & " /F", vbHide
+
         tvProcessID = 0
     End If
     ' tvProcessID = 0 : aucune TV lancée depuis ce classeur dans cette session
@@ -371,3 +384,7 @@ Je n'ai pas de Windows/Chrome/Edge disponible dans cet environnement pour tester
   TV n'ait fini de s'afficher, ou au contraire si la TV garde encore le focus après, augmente ou
   diminue cette valeur (en millisecondes) selon ce que tu observes chez toi. Pas de moyen fiable
   de le déterminer sans tester sur ta machine réelle.
+- **`Sleep 1000` dans `FermerTV`** entre l'arrêt propre et le filet de sécurité forcé : même
+  remarque, délai au jugé. S'il est trop court, le forçage `/F` interviendra alors que Chrome
+  était en train de se fermer proprement -- ce qui ramène le bandeau de restauration dans ce
+  cas précis. S'il te semble que le bandeau réapparaît occasionnellement, augmente cette valeur.
