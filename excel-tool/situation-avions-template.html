@@ -285,7 +285,7 @@
     <div class="wordmark">AIRBUS<span>.</span><small>Defence Training and Services</small><small class="site">Piste Avord</small></div>
     <div class="clockblock">
       <div class="datestr" id="datestr">Samedi 19 Septembre 2026</div>
-      <div class="quantieme">Quantième&nbsp;262</div>
+      <div class="quantieme" id="quantieme">Quantième&nbsp;262</div>
       <div class="clock" id="clock">11:00:19&nbsp;Z</div>
     </div>
   </header>
@@ -381,8 +381,9 @@
   function render(AIRCRAFT, KANNAD_DATE){
     document.querySelector(".kannad-pill .val").textContent = KANNAD_DATE;
 
-    // Un avion masqué (Masquer = "x" sur Situation) sort du tableau ET du plan de
-    // stationnement -- il reste dans les données mais n'est plus affiché sur Visu.
+    // Un avion masqué (Masquer = "x" sur Situation) sort du tableau, mais reste
+    // affiché sur le plan de stationnement -- il occupe toujours physiquement
+    // son poste, seule la ligne de détail est retirée du tableau.
     const VISIBLE = AIRCRAFT.filter(a => !a.masque);
 
     let tableHtml = HEAD.map(h => `<div class="bt-head">${h}</div>`).join("");
@@ -419,7 +420,7 @@
     // coordonnées réelles si le tracé ne correspond pas au terrain.
     const occByStand = {};
     let lavage = null;
-    VISIBLE.forEach(a => {
+    AIRCRAFT.forEach(a => {
       const p = normPos(a.pos);
       if (!p) return;
       if (p.zone === "special"){ if (p.num.toLowerCase() === "lav") lavage = a; return; }
@@ -555,6 +556,14 @@
     const months = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
     const d = days[now.getUTCDay()], m = months[now.getUTCMonth()];
     document.getElementById("datestr").textContent = `${d} ${now.getUTCDate()} ${m} ${now.getUTCFullYear()}`;
+
+    // Quantième = numéro du jour dans l'année en cours (1 au 1er janvier),
+    // calculé en UTC pour rester cohérent avec la date/heure Zulu affichées.
+    const startOfYear = Date.UTC(now.getUTCFullYear(), 0, 1);
+    const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const dayOfYear = Math.round((today - startOfYear) / 86400000) + 1;
+    document.getElementById("quantieme").innerHTML = `Quantième&nbsp;${dayOfYear}`;
+
     const hh = String(now.getUTCHours()).padStart(2,"0");
     const mm = String(now.getUTCMinutes()).padStart(2,"0");
     const ss = String(now.getUTCSeconds()).padStart(2,"0");
