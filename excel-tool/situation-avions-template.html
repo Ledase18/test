@@ -432,12 +432,16 @@
     // SUR la ligne (pas dans une case entre deux lignes) -- donc une seule ligne
     // par poste, pas de parois de chaque côté. Les postes 1-6 (jamais utilisés en
     // pratique) ne sont plus tracés, ce qui raccourcit le schéma d'autant.
-    const combX0 = 170, standW = 48, nUpper = 16;
+    // Calage réel confirmé : le coin gauche du hangar A est en face de l'emplacement
+    // 13 -- postes resserrés (standW 48->36) et décalés à gauche, hangars A-D
+    // décalés à droite d'autant, pour faire coïncider les deux sans déborder du
+    // cadre (voir PODS plus bas, A.x doit rester égal au cx du poste 13).
+    const combX0 = 15, standW = 48, nUpper = 16;
     const upperTopY = 48, spineY = 168;
     const combRight = combX0 + nUpper * standW - standW / 2;
 
     let combLines = "";
-    combLines += `<path class="diagram-line" d="M${combX0},${upperTopY} L${combX0-90},${spineY} L${combX0},${spineY}"/>`;
+    combLines += `<path class="diagram-line" d="M${combX0},${upperTopY} L${combX0-12},${spineY} L${combX0},${spineY}"/>`;
     combLines += `<line class="diagram-line" x1="${combX0}" y1="${spineY}" x2="${combRight+standW/2}" y2="${spineY}"/>`;
 
     let combSlots = "";
@@ -449,7 +453,10 @@
     }
 
     // ---- case Lavage ----
-    const lavX = 800, lavY = 198, lavW = 150, lavH = 38;
+    // Remontée en haut à droite, au même niveau que le titre du plan : sa place
+    // d'origine (à droite de la voie en peigne) est prise par le décalage des
+    // postes vers la gauche pour l'alignement avec les hangars.
+    const lavX = 910, lavY = 6, lavW = 150, lavH = 34;
     let lavageHtml = `
       <rect class="lavage-box" x="${lavX}" y="${lavY}" width="${lavW}" height="${lavH}" rx="4"/>
       <line class="diagram-line" x1="${lavX+86}" y1="${lavY}" x2="${lavX+86}" y2="${lavY+lavH}"/>
@@ -460,14 +467,15 @@
 
     // ---- postes A / B / C / D (formes chanfreinées avec grille de postes) ----
     const podY = 255, podH = 165;
+    // A.x = cx du poste 13 (combX0 + 6*standW + standW/2) -- calage confirmé.
     const PODS = [
-      {id:"A", x:40,  y:podY, w:175, h:podH, apex:true,
+      {id:"A", x:327, y:podY, w:175, h:podH, apex:true,
         rows:[["3","2","4"],["6","5","7"],["9","8",null]]},
-      {id:"B", x:215, y:podY, w:185, h:podH, apex:true,
+      {id:"B", x:502, y:podY, w:185, h:podH, apex:true,
         rows:[["3","2","4"],["6","5","7"],["9","8","10"]]},
-      {id:"C", x:415, y:podY, w:170, h:podH, apex:false,
+      {id:"C", x:702, y:podY, w:170, h:podH, apex:false,
         rows:[["3","1","2"],["6","4","5"],["7",null,"8"]]},
-      {id:"D", x:585, y:podY, w:170, h:podH, apex:false,
+      {id:"D", x:872, y:podY, w:170, h:podH, apex:false,
         rows:[["3","1","2"],["6","4","5"],["7",null,"8"]]},
     ];
 
@@ -501,7 +509,7 @@
       });
     });
 
-    document.getElementById("apron").innerHTML = `<svg viewBox="0 0 1000 440" xmlns="http://www.w3.org/2000/svg">
+    document.getElementById("apron").innerHTML = `<svg viewBox="0 0 1080 440" xmlns="http://www.w3.org/2000/svg">
       <text class="plan-title" x="12" y="26">Plan de stationnement</text>
       <g>${combLines}</g>
       <g>${combSlots}</g>
@@ -523,7 +531,7 @@
     const apronEl = document.getElementById("apron");
     if (!svg || !apronEl) return;
 
-    const ASPECT = 1000 / 440; // largeur / hauteur du viewBox du plan
+    const ASPECT = 1080 / 440; // largeur / hauteur du viewBox du plan (garder en phase avec le viewBox du <svg> généré plus haut)
     const MIN_W = 340, MAX_W = 900;
     const BOTTOM_MARGIN = 8; // respiration sous le plan
     const PAD_BORDER = 2 * (12 + 1); // padding + bordure de .apron (haut+bas)
