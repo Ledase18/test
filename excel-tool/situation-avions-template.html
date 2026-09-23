@@ -352,6 +352,20 @@
     return {zone:"special", num: pos};
   }
 
+  // Affichage : les postes réels de la voie en peigne (7-22, valeur Excel telle
+  // quelle, utilisée partout ailleurs pour retrouver l'avion) sont renumérotés
+  // 1-16 à l'affichage -- dans le tableau (colonne Pos.) ET sur le plan, pour
+  // rester cohérents entre les deux. Les postes des hangars (A1, B5...) et
+  // "lav" ne sont pas concernés, affichés tels quels.
+  function displayPos(pos){
+    const p = normPos(pos);
+    if (p && p.zone === "Voie"){
+      const n = Number(p.num);
+      if (n >= 7 && n <= 22) return String(n - 6);
+    }
+    return pos;
+  }
+
   function slotBadge(cx, cy, slotLabel, occ){
     const w = 32, h = 22, rx = cx - w/2, ry = cy - h/2;
     if (occ){
@@ -401,7 +415,7 @@
 
       return (
         cell(`tail-cell txt-${st}`, a.tail) +
-        cell("", a.pos ? `<span class="bt-pos">${a.pos}</span>` : "") +
+        cell("", a.pos ? `<span class="bt-pos">${displayPos(a.pos)}</span>` : "") +
         cell("", a.camp ? `<span class="txt-neutral">X</span>` : "") +
         cell("", o2Cell(a)) +
         cell("", prog) +
@@ -446,20 +460,17 @@
     combLines += `<line class="diagram-line" x1="${combX0}" y1="${spineY}" x2="${combRight+standW/2}" y2="${spineY}"/>`;
 
     // "num" = code réel du poste (7-22), tel qu'il vient de la colonne Pos.
-    // d'Excel -- utilisé pour retrouver l'avion (occByStand) et donc inchangé
-    // dans le tableau. "label" = simple numérotation d'affichage 1-16 sur le
-    // plan uniquement (poste réel 7 -> étiquette "1" ... 22 -> "16"), pour une
-    // lecture plus simple du schéma. Le tableau (colonne Pos.) continue
-    // d'afficher le code réel -- les deux ne correspondent donc plus visuellement
-    // pour un même avion (poste réel 13 = étiquette "7" sur le plan), à dessein.
+    // d'Excel -- utilisé pour retrouver l'avion (occByStand). L'étiquette
+    // affichée (1-16) vient de displayPos(), la même fonction que pour la
+    // colonne Pos. du tableau -- les deux restent donc cohérents entre eux
+    // pour un même avion (poste réel 13 -> "7" affiché ici ET dans le tableau).
     let combSlots = "";
     let poste13X = null;
     for (let i = 0; i < nUpper; i++){
       const num = String(7 + i);
-      const label = String(i + 1);
       const cx = combX0 + i * standW + standW / 2;
       combLines += `<line class="diagram-line" x1="${cx}" y1="${upperTopY}" x2="${cx}" y2="${spineY}"/>`;
-      combSlots += lineSlot(cx, (upperTopY + spineY) / 2, label, occByStand["Voie|" + num]);
+      combSlots += lineSlot(cx, (upperTopY + spineY) / 2, displayPos(num), occByStand["Voie|" + num]);
       if (num === "13") poste13X = cx;
     }
 
