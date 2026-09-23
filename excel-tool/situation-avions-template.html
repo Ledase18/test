@@ -431,12 +431,16 @@
     // ---- voie en peigne (postes 7-22) ----
     // Chaque poste est une ligne de guidage au sol : l'avion la suit et stationne
     // SUR la ligne (pas dans une case entre deux lignes) -- donc une seule ligne
-    // par poste, pas de parois de chaque côté. Les postes 1-6 (jamais utilisés en
-    // pratique) ne sont plus tracés, ce qui raccourcit le schéma d'autant.
-    // Calage réel confirmé : le coin gauche du hangar A est en face de l'emplacement
-    // 13 -- postes resserrés (standW 48->36) et décalés à gauche, hangars A-D
-    // décalés à droite d'autant, pour faire coïncider les deux sans déborder du
-    // cadre (voir PODS plus bas, A.x doit rester égal au cx du poste 13).
+    // par poste, pas de parois de chaque côté.
+    // Postes renumérotés sur le terrain (repeints) : la voie compte maintenant
+    // 16 postes numérotés 1 à 16 directement -- valeur saisie telle quelle dans
+    // Excel, aucune conversion ici (num = code réel = étiquette affichée).
+    // Calage réel confirmé : le coin gauche du hangar A est en face du 7e poste
+    // de la voie (l'ancien poste 13, avant renumérotation -- même emplacement
+    // physique, juste un numéro différent) -- postes resserrés (standW 48->36)
+    // et décalés à gauche, hangars A-D décalés à droite d'autant, pour faire
+    // coïncider les deux sans déborder du cadre (voir PODS plus bas, A.x doit
+    // rester égal au cx du 7e poste).
     const combX0 = 15, standW = 48, nUpper = 16;
     const upperTopY = 48, spineY = 168;
     const combRight = combX0 + nUpper * standW - standW / 2;
@@ -445,31 +449,22 @@
     combLines += `<path class="diagram-line" d="M${combX0},${upperTopY} L${combX0-12},${spineY} L${combX0},${spineY}"/>`;
     combLines += `<line class="diagram-line" x1="${combX0}" y1="${spineY}" x2="${combRight+standW/2}" y2="${spineY}"/>`;
 
-    // "num" = code réel du poste (7-22), tel qu'il vient de la colonne Pos.
-    // d'Excel -- utilisé pour retrouver l'avion (occByStand) et pour la colonne
-    // Pos. du tableau (inchangée, affiche le code réel tel quel). "label" =
-    // numérotation d'affichage 1-16 SUR LE PLAN SEULEMENT (poste réel 7 -> "1"
-    // ... 22 -> "16") : le badge d'un avion apparaît donc sous un numéro de
-    // plan différent de sa colonne Pos. dans le tableau pour le même poste
-    // (poste réel 10 -> "4" sur le plan, "10" dans le tableau) -- assumé, vu
-    // ta dernière demande ; dis-moi si ce n'est pas ce que tu voulais.
     let combSlots = "";
-    let poste13X = null;
+    let alignMarkerX = null;
     for (let i = 0; i < nUpper; i++){
-      const num = String(7 + i);
-      const label = String(i + 1);
+      const num = String(1 + i);
       const cx = combX0 + i * standW + standW / 2;
       combLines += `<line class="diagram-line" x1="${cx}" y1="${upperTopY}" x2="${cx}" y2="${spineY}"/>`;
-      combSlots += lineSlot(cx, (upperTopY + spineY) / 2, label, occByStand["Voie|" + num]);
-      if (num === "13") poste13X = cx;
+      combSlots += lineSlot(cx, (upperTopY + spineY) / 2, num, occByStand["Voie|" + num]);
+      if (i === 6) alignMarkerX = cx; // 7e poste = ancien poste 13, calage hangar A
     }
 
-    // Petite flèche rouge sous la ligne, pointant vers le poste 13 -- repère
-    // visuel du calage avec le coin gauche du hangar A (même x que PODS[0].x).
-    let poste13Marker = "";
-    if (poste13X !== null){
+    // Petite flèche rouge sous la ligne, pointant vers le poste aligné avec le
+    // coin gauche du hangar A (même x que PODS[0].x).
+    let alignMarker = "";
+    if (alignMarkerX !== null){
       const my = spineY + 8;
-      poste13Marker = `<path class="align-marker" d="M${poste13X},${my} L${poste13X-7},${my+12} L${poste13X+7},${my+12} Z"/>`;
+      alignMarker = `<path class="align-marker" d="M${alignMarkerX},${my} L${alignMarkerX-7},${my+12} L${alignMarkerX+7},${my+12} Z"/>`;
     }
 
     // ---- case Lavage ----
@@ -533,7 +528,7 @@
       <text class="plan-title" x="12" y="26">Plan de stationnement</text>
       <g>${combLines}</g>
       <g>${combSlots}</g>
-      <g>${poste13Marker}</g>
+      <g>${alignMarker}</g>
       <g>${lavageHtml}</g>
       <g>${podsHtml}</g>
     </svg>`;
