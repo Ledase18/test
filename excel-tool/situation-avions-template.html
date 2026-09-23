@@ -278,6 +278,7 @@
   }
   .lavage-box{fill:var(--surface-2);stroke:var(--line);stroke-width:2}
   .lavage-label{font-family:var(--font-body);font-weight:700;font-size:12px;fill:var(--muted)}
+  .align-marker{fill:var(--crit-600)}
 </style>
 
 <div class="board">
@@ -445,11 +446,21 @@
     combLines += `<line class="diagram-line" x1="${combX0}" y1="${spineY}" x2="${combRight+standW/2}" y2="${spineY}"/>`;
 
     let combSlots = "";
+    let poste13X = null;
     for (let i = 0; i < nUpper; i++){
       const num = String(7 + i);
       const cx = combX0 + i * standW + standW / 2;
       combLines += `<line class="diagram-line" x1="${cx}" y1="${upperTopY}" x2="${cx}" y2="${spineY}"/>`;
       combSlots += lineSlot(cx, (upperTopY + spineY) / 2, num, occByStand["Voie|" + num]);
+      if (num === "13") poste13X = cx;
+    }
+
+    // Petite flèche rouge sous la ligne, pointant vers le poste 13 -- repère
+    // visuel du calage avec le coin gauche du hangar A (même x que PODS[0].x).
+    let poste13Marker = "";
+    if (poste13X !== null){
+      const my = spineY + 8;
+      poste13Marker = `<path class="align-marker" d="M${poste13X},${my} L${poste13X-7},${my+12} L${poste13X+7},${my+12} Z"/>`;
     }
 
     // ---- case Lavage ----
@@ -513,6 +524,7 @@
       <text class="plan-title" x="12" y="26">Plan de stationnement</text>
       <g>${combLines}</g>
       <g>${combSlots}</g>
+      <g>${poste13Marker}</g>
       <g>${lavageHtml}</g>
       <g>${podsHtml}</g>
     </svg>`;
