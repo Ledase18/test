@@ -445,13 +445,22 @@
     combLines += `<path class="diagram-line" d="M${combX0},${upperTopY} L${combX0-12},${spineY} L${combX0},${spineY}"/>`;
     combLines += `<line class="diagram-line" x1="${combX0}" y1="${spineY}" x2="${combRight+standW/2}" y2="${spineY}"/>`;
 
+    // "num" = code réel du poste (7-22), tel qu'il vient de la colonne Pos.
+    // d'Excel -- utilisé pour retrouver l'avion (occByStand) et pour la colonne
+    // Pos. du tableau (inchangée, affiche le code réel tel quel). "label" =
+    // numérotation d'affichage 1-16 SUR LE PLAN SEULEMENT (poste réel 7 -> "1"
+    // ... 22 -> "16") : le badge d'un avion apparaît donc sous un numéro de
+    // plan différent de sa colonne Pos. dans le tableau pour le même poste
+    // (poste réel 10 -> "4" sur le plan, "10" dans le tableau) -- assumé, vu
+    // ta dernière demande ; dis-moi si ce n'est pas ce que tu voulais.
     let combSlots = "";
     let poste13X = null;
     for (let i = 0; i < nUpper; i++){
       const num = String(7 + i);
+      const label = String(i + 1);
       const cx = combX0 + i * standW + standW / 2;
       combLines += `<line class="diagram-line" x1="${cx}" y1="${upperTopY}" x2="${cx}" y2="${spineY}"/>`;
-      combSlots += lineSlot(cx, (upperTopY + spineY) / 2, num, occByStand["Voie|" + num]);
+      combSlots += lineSlot(cx, (upperTopY + spineY) / 2, label, occByStand["Voie|" + num]);
       if (num === "13") poste13X = cx;
     }
 
