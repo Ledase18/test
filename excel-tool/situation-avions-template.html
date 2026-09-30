@@ -252,13 +252,13 @@
   .stand-code{
     font-family:var(--font-body);
     font-weight:700;
-    font-size:11px;
+    font-size:12px;
     fill:var(--muted);
   }
   .stand-occ{
     font-family:var(--font-display);
     font-weight:800;
-    font-size:13px;
+    font-size:14px;
     fill:var(--ink);
   }
   .stand-occ.occ-crit{fill:var(--crit-600)}
@@ -373,7 +373,7 @@
   // case), et un badge seulement quand un avion est réellement stationné dessus.
   function lineSlot(cx, cy, slotLabel, occ){
     if (occ) return slotBadge(cx, cy, slotLabel, occ);
-    return `<text class="stand-code" x="${cx}" y="${cy+4}" text-anchor="middle" style="font-size:13px">${slotLabel}</text>`;
+    return `<text class="stand-code" x="${cx}" y="${cy+5}" text-anchor="middle" style="font-size:15px">${slotLabel}</text>`;
   }
 
   // Construit tout l'affichage (tableau + plan) à partir des données -- appelée au
