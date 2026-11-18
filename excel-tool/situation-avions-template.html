@@ -290,7 +290,6 @@
   }
   .lavage-box{fill:var(--surface-2);stroke:var(--line);stroke-width:2}
   .lavage-label{font-family:var(--font-body);font-weight:700;font-size:12px;fill:var(--muted)}
-  .hors-ligne-title{font-family:var(--font-display);font-weight:700;font-size:14px;fill:var(--ink)}
   .align-marker{fill:var(--crit-600)}
 </style>
 
@@ -467,6 +466,18 @@
       if (p.zone === "special"){ if (p.num.toLowerCase() === "lav") lavage = a; return; }
       occByStand[p.zone + "|" + p.num] = a;
     });
+    // Avions "hors ligne" (Paramètre!B59:C78) : mêmes emplacements (hangars
+    // A-D) que les avions de la voie principale, confirmé -- ajoutés dans le
+    // même occByStand, donc affichés avec exactement le même badge. Pas de
+    // statut PTR/AVQ/AM/PM/VDN connu pour eux (pas dans Situation!B7:S31) --
+    // stateOf() leur donne donc "ok" (vert) par défaut, faute de donnée.
+    // Une place déjà prise par un vrai avion de la voie n'est pas écrasée.
+    (HORS_LIGNE || []).forEach(h => {
+      const p = normPos(h.pos);
+      if (!p) return;
+      const key = p.zone + "|" + p.num;
+      if (!occByStand[key]) occByStand[key] = {tail: h.num, masque: false};
+    });
 
     // ---- voie en peigne (postes 7-22) ----
     // Chaque poste est une ligne de guidage au sol : l'avion la suit et stationne
@@ -525,25 +536,6 @@
       const cx = combX0 + i * standW + standW / 2;
       lowerLines += `<line class="diagram-line" x1="${cx}" y1="${spineY}" x2="${cx}" y2="${xRowBotY}"/>`;
       lowerSlots += lineSlot(cx, (spineY + xRowBotY) / 2, "X" + (i + 1), occByStand["X|" + (i + 1)]);
-    }
-
-    // ---- avions hors ligne (Paramètre!B59:C78, Tableau11) ----
-    // Avions suivis hors de la voie/des hangars -- liste simple (pas de
-    // coordonnées réelles connues pour "B6", "C1" etc., qui ne sont pas les
-    // mêmes emplacements que les postes internes des hangars B/C/D malgré la
-    // lettre commune) dans l'espace resté libre sous les postes X1-X6, à
-    // gauche du hangar A. Grandit vers le bas avec le nombre d'avions hors
-    // ligne -- reste dans le cadre tant qu'il n'y en a pas plus d'une dizaine
-    // environ (au-delà, ça peut déborder sous le plan : à surveiller en usage
-    // réel, je n'ai pas de volume type pour calibrer une limite précise).
-    let horsLigneHtml = "";
-    if (HORS_LIGNE && HORS_LIGNE.length){
-      const hlX = 15, hlY = 295, lineH = 15;
-      horsLigneHtml += `<text class="hors-ligne-title" x="${hlX}" y="${hlY}">Hors ligne</text>`;
-      HORS_LIGNE.forEach((h, idx) => {
-        const ly = hlY + 18 + idx * lineH;
-        horsLigneHtml += `<text class="lavage-label" x="${hlX}" y="${ly}">${h.pos} : ${h.num}</text>`;
-      });
     }
 
     // ---- case Lavage ----
@@ -618,7 +610,6 @@
       <g>${alignMarker}</g>
       <g>${lowerLines}</g>
       <g>${lowerSlots}</g>
-      <g>${horsLigneHtml}</g>
       <g>${lavageHtml}</g>
       <g>${podsHtml}</g>
     </svg>`;
