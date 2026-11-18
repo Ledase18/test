@@ -194,6 +194,10 @@
     font-size:12.5px;
     line-height:1.35;
     white-space:normal;
+    overflow-wrap:break-word;
+    word-break:break-word;
+    display:block;
+    min-width:0;
     color:var(--ink);
   }
   .bt-cell.wrap-cell{
@@ -261,6 +265,7 @@
   .stand-outline.occ-info{fill:var(--info-100);stroke:var(--info-600)}
   .stand-outline.occ-ok{fill:var(--ok-100);stroke:var(--ok-600)}
   .stand-outline.occ-ext{fill:var(--purple-100);stroke:var(--purple-600)}
+  .stand-outline.occ-neutral{fill:var(--neutral-100);stroke:var(--neutral-600)}
   .stand-code{
     font-family:var(--font-body);
     font-weight:700;
@@ -278,6 +283,7 @@
   .stand-occ.occ-info{fill:var(--info-600)}
   .stand-occ.occ-ok{fill:var(--ok-600)}
   .stand-occ.occ-ext{fill:var(--purple-600)}
+  .stand-occ.occ-neutral{fill:var(--neutral-600)}
   .diagram-line{fill:none;stroke:var(--line);stroke-width:3}
   .diagram-fill{fill:var(--surface-2);stroke:var(--line);stroke-width:2.5}
   .pod-label,.diagram-label{
@@ -393,15 +399,23 @@
     return {zone:"special", num: pos};
   }
 
-  function slotBadge(cx, cy, slotLabel, occ){
+  // hideLabelIfOccupied (hangars seulement, voir appels dans PODS plus bas) :
+  // masque le numéro de poste au-dessus du badge une fois l'avion affiché --
+  // redondant avec le badge dans la grille serrée des hangars. Sur la voie
+  // principale et les postes X1-X6 (lineSlot, sans ce paramètre), le numéro
+  // reste toujours visible.
+  function slotBadge(cx, cy, slotLabel, occ, hideLabelIfOccupied){
     const w = 38, h = 25, rx = cx - w/2, ry = cy - h/2;
     if (occ){
-      const st = stateOf(occ);
+      // Avion "hors ligne" (pas de statut connu) -> gris, jamais stateOf().
+      const st = occ.horsLigne ? "neutral" : stateOf(occ);
       const code = occ.tail.split(" ").pop();
+      const label = hideLabelIfOccupied ? "" :
+        `<text class="stand-code" x="${cx}" y="${ry-4}" text-anchor="middle">${slotLabel}</text>`;
       return `<g>
         <rect class="stand-outline occ-${st}" x="${rx}" y="${ry}" width="${w}" height="${h}" rx="4"/>
         <text class="stand-occ occ-${st}" x="${cx}" y="${cy+4}" text-anchor="middle">${code}</text>
-        <text class="stand-code" x="${cx}" y="${ry-4}" text-anchor="middle">${slotLabel}</text>
+        ${label}
       </g>`;
     }
     return `<g>
@@ -476,7 +490,7 @@
       const p = normPos(h.pos);
       if (!p) return;
       const key = p.zone + "|" + p.num;
-      if (!occByStand[key]) occByStand[key] = {tail: h.num, masque: false};
+      if (!occByStand[key]) occByStand[key] = {tail: h.num, masque: false, horsLigne: true};
     });
 
     // ---- voie en peigne (postes 7-22) ----
@@ -590,7 +604,7 @@
 
       if (p.peakSlot){
         const cx = p.x + p.w/2, cy = p.y + 36*0.62 + 8;
-        podsHtml += slotBadge(cx, cy, "1", occByStand[p.id + "|1"]);
+        podsHtml += slotBadge(cx, cy, "1", occByStand[p.id + "|1"], true);
       }
 
       const colX = [p.x + p.w/6, p.x + p.w/2, p.x + p.w*5/6];
@@ -598,7 +612,7 @@
       p.rows.forEach((row, ri) => {
         row.forEach((num, ci) => {
           if (num === null) return;
-          podsHtml += slotBadge(colX[ci], rowY[ri], num, occByStand[p.id + "|" + num]);
+          podsHtml += slotBadge(colX[ci], rowY[ri], num, occByStand[p.id + "|" + num], true);
         });
       });
     });
