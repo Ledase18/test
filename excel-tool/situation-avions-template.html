@@ -323,16 +323,15 @@
 
 <script>
   // Règle confirmée (nouvelle version) : vert par défaut ; rouge si "I" dans
-  // PTR ou AVQ (l'un ou l'autre, ou les deux) ; bleu si VOL présent dans
+  // PTR ou AVQ (l'un ou l'autre, ou les deux) OU si Plein="INC" (règle
+  // antérieure, confirmée toujours valable) ; bleu si VOL présent dans
   // AM/PM/VDN et pas d'EXT ; violet si VOL ET EXT présents (même si pas dans
   // la même colonne, ex. AM=VOL, PM=EXT). Rouge reste prioritaire sur
   // bleu/violet. Remplace l'ancienne règle où EXT seul (sans VOL associé)
-  // suffisait à colorer en violet -- un EXT isolé sans aucun VOL ne déclenche
-  // plus rien de spécial (vert) avec cette nouvelle définition. Le
-  // déclenchement par Plein="INC" a aussi été retiré (absent de l'énoncé de
-  // la nouvelle règle) -- à confirmer si c'était un oubli plutôt qu'un choix.
+  // suffisait à colorer en violet -- confirmé : un EXT isolé sans aucun VOL
+  // ne déclenche plus rien de spécial (vert) avec cette nouvelle définition.
   function stateOf(a){
-    const hasI = (a.ptr === "I" || a.avq === "I");
+    const hasI = (a.ptr === "I" || a.avq === "I" || a.plein === "INC");
     if (hasI) return "crit";
     const hasVol = (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL");
     const hasExt = (a.am === "EXT" || a.pm === "EXT" || a.vdn === "EXT");
