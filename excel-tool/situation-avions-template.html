@@ -156,7 +156,7 @@
   /* ---------- aircraft board (façon panneau d'affichage aéroport) ---------- */
   .board-table{
     display:grid;
-    grid-template-columns: 76px 40px 34px 38px 46px 46px 46px 38px 38px 46px 58px 1fr;
+    grid-template-columns: 76px 40px 44px 30px 46px 46px 46px 38px 38px 46px 58px 1fr;
     margin:0 14px 14px;
     border:1px solid var(--line);
     border-radius:10px;
@@ -203,6 +203,10 @@
     text-align:center;
     justify-content:center;
   }
+  .bt-cell.center-cell{
+    justify-content:center;
+    text-align:center;
+  }
   .bt-cell.tail-cell{
     font-family:var(--font-display);
     font-weight:800;
@@ -229,7 +233,7 @@
   .txt-neutral{color:var(--muted)}
 
   @media (max-width:640px){
-    .board-table{grid-template-columns: 64px 34px 28px 32px 38px 38px 38px 32px 32px 38px 48px 1fr}
+    .board-table{grid-template-columns: 64px 34px 38px 24px 38px 38px 38px 32px 32px 38px 48px 1fr}
     .bt-cell{font-size:12.5px; padding:5px 8px}
     .bt-cell.tail-cell{font-size:16px}
     .bt-cell.wrap-cell{font-size:9.5px}
@@ -429,7 +433,7 @@
       return (
         cell(`tail-cell txt-${st}`, a.tail) +
         cell("", a.pos ? `<span class="bt-pos">${a.pos}</span>` : "") +
-        cell("", a.camp ? `<span class="txt-neutral">X</span>` : "") +
+        cell("center-cell", a.camp ? `<span class="txt-neutral">X</span>` : "") +
         cell("", o2Cell(a)) +
         cell("wrap-cell", progCell(a.am)) +
         cell("wrap-cell", progCell(a.pm)) +
@@ -499,18 +503,22 @@
 
     // ---- anciens postes 1-6 (ceux retirés en même temps que la numérotation
     // 7-22 a été croquée verticalement) -- remis en face des nouveaux postes 1
-    // à 6 de la voie principale, sous forme d'une petite rangée secondaire.
+    // à 6 de la voie principale. Lignes de la même longueur que celles des
+    // postes 1-16 (upperTopY->spineY = 120px), prolongées sous la ligne de
+    // spine plutôt que dans une rangée séparée : elles descendent alors dans
+    // la bande verticale des hangars (à gauche du hangar A, qui commence
+    // seulement à x=327) sans pousser podY vers le bas.
     // Renommés X1-X6 pour ne pas les confondre avec la numérotation 1-16 de la
     // voie principale -- ce sont des emplacements distincts, pas des doublons.
     // Même convention que les autres postes : normPos("X1") -> {zone:"X",
     // num:"1"}, donc occByStand["X|1"]..["X|6"], sans traitement spécial.
-    const lowerBotY = spineY + 62;
-    let lowerLines = `<line class="diagram-line" x1="${combX0}" y1="${lowerBotY}" x2="${combX0 + 6*standW}" y2="${lowerBotY}"/>`;
+    const xRowBotY = spineY + (spineY - upperTopY);
+    let lowerLines = "";
     let lowerSlots = "";
     for (let i = 0; i < 6; i++){
       const cx = combX0 + i * standW + standW / 2;
-      lowerLines += `<line class="diagram-line" x1="${cx}" y1="${spineY}" x2="${cx}" y2="${lowerBotY}"/>`;
-      lowerSlots += lineSlot(cx, (spineY + lowerBotY) / 2, "X" + (i + 1), occByStand["X|" + (i + 1)]);
+      lowerLines += `<line class="diagram-line" x1="${cx}" y1="${spineY}" x2="${cx}" y2="${xRowBotY}"/>`;
+      lowerSlots += lineSlot(cx, (spineY + xRowBotY) / 2, "X" + (i + 1), occByStand["X|" + (i + 1)]);
     }
 
     // ---- case Lavage ----
@@ -526,36 +534,44 @@
       ? `<text class="stand-occ occ-${stateOf(lavage)}" x="${lavX+118}" y="${lavY+lavH/2+5}" text-anchor="middle">${lavage.tail.split(" ").pop()}</text>`
       : `<text class="stand-occ" x="${lavX+118}" y="${lavY+lavH/2+5}" text-anchor="middle">&mdash;</text>`;
 
-    // ---- postes A / B / C / D (formes chanfreinées avec grille de postes) ----
+    // ---- postes A / B / C / D ----
+    // Les 4 hangars ont la même silhouette (toit pointu) -- "shape" ne pilote
+    // que le contour dessiné. "peakSlot" (A/B seulement) est indépendant :
+    // c'est lui qui réserve la place pour le badge "1" tout en haut et décale
+    // la grille en dessous. C/D gardent leur grille (gy0/gh) et leur "1" posé
+    // normalement dans la grille comme avant -- seul le contour change, la
+    // position et la numérotation des emplacements ne bougent pas.
     const podY = 255, podH = 165;
     // A.x = cx du poste 13 (combX0 + 6*standW + standW/2) -- calage confirmé.
     const PODS = [
-      {id:"A", x:327, y:podY, w:175, h:podH, apex:true,
+      {id:"A", x:327, y:podY, w:175, h:podH, shape:"apex", peakSlot:true,
         rows:[["3","2","4"],["6","5","7"],["9","8",null]]},
-      {id:"B", x:502, y:podY, w:185, h:podH, apex:true,
+      {id:"B", x:502, y:podY, w:185, h:podH, shape:"apex", peakSlot:true,
         rows:[["3","2","4"],["6","5","7"],["9","8","10"]]},
-      {id:"C", x:702, y:podY, w:170, h:podH, apex:false,
+      {id:"C", x:702, y:podY, w:170, h:podH, shape:"apex", peakSlot:false,
         rows:[["3","1","2"],["6","4","5"],["7",null,"8"]]},
-      {id:"D", x:872, y:podY, w:170, h:podH, apex:false,
+      {id:"D", x:872, y:podY, w:170, h:podH, shape:"apex", peakSlot:false,
         rows:[["3","1","2"],["6","4","5"],["7",null,"8"]]},
     ];
 
     let podsHtml = "";
     PODS.forEach(p => {
       let path, gy0, gh;
-      if (p.apex){
-        const peakH = 36;
+      const peakH = 36, c = 28;
+      if (p.shape === "apex"){
         path = `M${p.x+p.w/2},${p.y} L${p.x+p.w},${p.y+peakH} L${p.x+p.w},${p.y+p.h} L${p.x},${p.y+p.h} L${p.x},${p.y+peakH} Z`;
+      } else {
+        path = `M${p.x+c},${p.y} L${p.x+p.w-c},${p.y} L${p.x+p.w},${p.y+c} L${p.x+p.w},${p.y+p.h} L${p.x},${p.y+p.h} L${p.x},${p.y+c} Z`;
+      }
+      if (p.peakSlot){
         gy0 = p.y + peakH + 16; gh = p.h - peakH - 28;
       } else {
-        const c = 28;
-        path = `M${p.x+c},${p.y} L${p.x+p.w-c},${p.y} L${p.x+p.w},${p.y+c} L${p.x+p.w},${p.y+p.h} L${p.x},${p.y+p.h} L${p.x},${p.y+c} Z`;
         gy0 = p.y + c + 18; gh = p.h - c - 30;
       }
       podsHtml += `<path class="diagram-fill" d="${path}"/>`;
       podsHtml += `<text class="pod-label" x="${p.x+p.w/2}" y="${p.y-12}" text-anchor="middle">${p.id}</text>`;
 
-      if (p.apex){
+      if (p.peakSlot){
         const cx = p.x + p.w/2, cy = p.y + 36*0.62 + 8;
         podsHtml += slotBadge(cx, cy, "1", occByStand[p.id + "|1"]);
       }
