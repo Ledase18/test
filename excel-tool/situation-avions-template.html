@@ -3,20 +3,28 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Titillium+Web:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <style>
-  /* Thème unique façon panneau d'affichage aéroport (FIDS) : toujours sombre,
-     pas de bascule clair/sombre -- un vrai panneau n'a pas de "mode clair". */
+  /* Thème sombre par défaut (panneau d'affichage aéroport, FIDS), avec une
+     variante claire bascule-able via le bouton Excel (reflets au soleil) --
+     voir [data-theme="light"] plus bas. --on-navy et --accent-600 existent
+     pour séparer deux usages qui partageaient --muted/--sky-300 dans la
+     version "toujours sombre" : --on-navy = texte sur fond navy FIXE (bandeau
+     du haut, en-tête du tableau) qui ne doit JAMAIS changer avec le thème ;
+     --accent-600 = accent sur fond clair/surface qui doit au contraire suivre
+     le thème (sinon illisible en clair). */
   :root{
     --navy-900:#001b3a;
     --navy-800:#0a2c53;
     --navy-700:#0d3a6b;
     --sky-500:#00a8e1;
     --sky-300:#7fd4f0;
+    --on-navy:#8ea0bd;
     --bg:#070f1c;
     --surface:#101c30;
     --surface-2:#0b1526;
     --ink:#eef3fb;
     --muted:#8ea0bd;
     --line:#1f2f47;
+    --accent-600:#7fd4f0;
     --ok-600:#3ddc84;
     --ok-100:#0e2a20;
     --warn-600:#ffb454;
@@ -32,6 +40,35 @@
     --font-display:'Barlow Condensed',system-ui,sans-serif;
     --font-body:'Titillium Web',system-ui,sans-serif;
     --font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  }
+
+  /* Thème clair : le bandeau du haut et l'en-tête du tableau restent sur fond
+     navy (couleurs inchangées, --on-navy fixe) -- seuls le fond général, les
+     cartes/cellules et les accents de contenu changent. Couleurs -600/-100
+     redéfinies (pas une simple inversion) : les teintes "glow" du thème sombre
+     (ex. --info-600 #5ec8ff) sont illisibles en texte sur fond blanc, donc
+     remplacées par des teintes plus saturées/foncées adaptées au contraste
+     clair, avec des -100 en tons pastel clairs (au lieu de tons sombres). */
+  :root[data-theme="light"]{
+    --bg:#eef1f6;
+    --surface:#ffffff;
+    --surface-2:#f4f6fa;
+    --ink:#10192b;
+    --muted:#5b6b84;
+    --line:#d7dde6;
+    --accent-600:#0a6ebd;
+    --ok-600:#1f9d55;
+    --ok-100:#e3f7ea;
+    --warn-600:#b36b00;
+    --warn-100:#fdf0dc;
+    --crit-600:#d6362c;
+    --crit-100:#fbe4e2;
+    --info-600:#1565c0;
+    --info-100:#e2f0fb;
+    --purple-600:#7a4fd1;
+    --purple-100:#ece3fb;
+    --neutral-600:#5c6b82;
+    --neutral-100:#eceff3;
   }
 
   body{
@@ -77,7 +114,7 @@
     text-transform:uppercase;
   }
   .wordmark small.site{
-    color:var(--muted);
+    color:var(--on-navy);
     font-size:10px;
     letter-spacing:2px;
     margin-top:2px;
@@ -124,7 +161,7 @@
     font-weight:700;
     font-size:17px;
     font-variant-numeric:tabular-nums;
-    color:var(--sky-300);
+    color:var(--accent-600);
   }
 
   /* ---------- legend ---------- */
@@ -168,7 +205,7 @@
     font-size:10px;
     letter-spacing:1px;
     text-transform:uppercase;
-    color:var(--muted);
+    color:var(--on-navy);
     background:var(--navy-900);
     padding:6px 10px;
     border-bottom:2px solid var(--sky-500);
@@ -223,7 +260,7 @@
     font-family:var(--font-body);
     font-weight:700;
     font-size:12px;
-    color:var(--sky-300);
+    color:var(--accent-600);
     background:rgba(0,168,225,0.14);
     border:1px solid rgba(0,168,225,0.35);
     border-radius:5px;
@@ -452,7 +489,11 @@
   // Construit tout l'affichage (tableau + plan) à partir des données -- appelée au
   // chargement initial ET à chaque rafraîchissement (voir refreshData), pour ne
   // jamais recharger la page entière (évite le flash toutes les 5s).
-  function render(AIRCRAFT, KANNAD_DATE, HORS_LIGNE){
+  function render(AIRCRAFT, KANNAD_DATE, HORS_LIGNE, THEME){
+    // THEME = "light" ou "dark" (bouton Excel, voir BasculerTheme) -- appliqué
+    // à chaque render() (initial ET rafraîchissement toutes les 5s), pour que
+    // la bascule prenne effet sans recharger la page.
+    document.documentElement.setAttribute("data-theme", THEME === "light" ? "light" : "dark");
     document.querySelector(".kannad-pill .val").textContent = KANNAD_DATE;
 
     // Un avion masqué (Masquer = "x" sur Situation) sort du tableau, mais reste
@@ -684,8 +725,9 @@
   const AIRCRAFT = __AIRCRAFT_DATA__;
   const KANNAD_DATE = "__KANNAD_DATE__";
   const HORS_LIGNE = __HORS_LIGNE_DATA__;
+  const THEME = "__THEME__";
   /*DATA_END*/
-  render(AIRCRAFT, KANNAD_DATE, HORS_LIGNE);
+  render(AIRCRAFT, KANNAD_DATE, HORS_LIGNE, THEME);
 
   function tick(){
     // Heure UTC (le "Z" affiché est le vrai suffixe Zulu, pas juste un libellé).
@@ -722,8 +764,8 @@
       const text = await res.text();
       const m = text.match(/\/\*DATA_START\*\/([\s\S]*?)\/\*DATA_END\*\//);
       if (!m) throw new Error("marqueurs introuvables");
-      const scope = Function(m[1] + "\nreturn {AIRCRAFT, KANNAD_DATE, HORS_LIGNE};")();
-      render(scope.AIRCRAFT, scope.KANNAD_DATE, scope.HORS_LIGNE);
+      const scope = Function(m[1] + "\nreturn {AIRCRAFT, KANNAD_DATE, HORS_LIGNE, THEME};")();
+      render(scope.AIRCRAFT, scope.KANNAD_DATE, scope.HORS_LIGNE, scope.THEME);
     } catch (e){
       // Repli : si le fetch local échoue (accès fichier bloqué, fichier en cours
       // d'écriture...), on retombe sur un rechargement complet plutôt que de rester

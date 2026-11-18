@@ -150,9 +150,16 @@ Sub GenererHTMLSituation()
     html = streamIn.ReadText
     streamIn.Close
 
+    ' Thème clair/sombre (bouton "Thème", voir BasculerTheme) -- stocké dans
+    ' Paramètre!A1 ("light" ou vide/autre -> sombre par défaut).
+    Dim themeStr As String
+    themeStr = LCase(Trim(CellStr(wsParam.Range("A1"))))
+    If themeStr <> "light" Then themeStr = "dark"
+
     html = Replace(html, "__AIRCRAFT_DATA__", aircraftJs)
     html = Replace(html, "__KANNAD_DATE__", kannadStr)
     html = Replace(html, "__HORS_LIGNE_DATA__", horsLigneJs)
+    html = Replace(html, "__THEME__", themeStr)
 
     Dim streamOut As Object
     Set streamOut = CreateObject("ADODB.Stream")
@@ -176,6 +183,55 @@ Changements par rapport à ta version :
 - Le bloc "Avions hors ligne" entier (nouveau), juste après le calcul de `aircraftJs`.
 - `html = Replace(html, "__HORS_LIGNE_DATA__", horsLigneJs)`, ajouté à la suite des deux
   `Replace` déjà présents.
+- Lecture du thème (`Paramètre!A1`) et `html = Replace(html, "__THEME__", themeStr)` -- voir
+  section suivante.
 
 Tout le reste est identique à ce que tu as envoyé.
+
+## Bascule thème clair/sombre
+
+Le template gère maintenant deux thèmes (sombre par défaut, clair en option -- moins de
+reflets au soleil). Le choix est stocké dans une cellule libre confirmée vide en inspectant
+`piste - V4.xlsm` : **`Paramètre!A1`**, contenant soit `"light"`, soit vide/autre chose (traité
+comme sombre). `GenererHTMLSituation` la lit à chaque export (voir ci-dessus) et l'injecte dans
+`__THEME__`.
+
+Il faut un deuxième `Sub`, qui bascule la valeur de `Paramètre!A1` puis relance tout de suite
+`GenererHTMLSituation` pour que le changement soit visible dans les 5 secondes (le navigateur
+relit le fichier exporté automatiquement, pas besoin de rouvrir la page) :
+
+```vba
+Sub BasculerTheme()
+    On Error GoTo ErrHandler
+
+    Dim wsParam As Worksheet
+    Set wsParam = ThisWorkbook.Sheets("Paramètre")
+
+    Dim current As String
+    current = LCase(Trim(CStr(wsParam.Range("A1").Value)))
+
+    If current = "light" Then
+        wsParam.Range("A1").Value = "dark"
+    Else
+        wsParam.Range("A1").Value = "light"
+    End If
+
+    GenererHTMLSituation
+    Exit Sub
+
+ErrHandler:
+    MsgBox "BasculerTheme : " & Err.Description, vbExclamation
+End Sub
+```
+
+### Bouton Excel
+
+Même principe que les boutons "Lancer TV" / "Fermer TV" déjà en place : un bouton Image
+ActiveX (ou un bouton de formulaire, selon ce que tu utilises déjà) sur la feuille **Situation**
+et sur la feuille **Gestion**, assigné à la macro `BasculerTheme`. Pas de nouvelle icône
+fournie ici -- reprends le même style/gabarit que les boutons existants (ou une icône simple
+"soleil/lune" si tu en as une sous la main), l'important est juste l'assignation de macro.
+
+Rien d'autre à changer : `Paramètre!A1` vide au premier lancement se lit comme `"dark"`
+(comportement actuel inchangé tant que personne n'a cliqué sur le bouton).
 
