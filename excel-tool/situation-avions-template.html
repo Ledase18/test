@@ -290,6 +290,7 @@
   }
   .lavage-box{fill:var(--surface-2);stroke:var(--line);stroke-width:2}
   .lavage-label{font-family:var(--font-body);font-weight:700;font-size:12px;fill:var(--muted)}
+  .hors-ligne-title{font-family:var(--font-display);font-weight:700;font-size:14px;fill:var(--ink)}
   .align-marker{fill:var(--crit-600)}
 </style>
 
@@ -321,16 +322,22 @@
 </div>
 
 <script>
-  // Règle confirmée : sur PTR/AVQ, un "I" = rouge (indispo), sinon vert, sauf si
-  // l'avion est en vol (bleu) ou en vol extérieur -- "EXT" dans AM/PM/VDN --
-  // (violet). MTN et les autres trigrammes n'ont pas de couleur dédiée -- ce ne
-  // sont que des libellés d'état, pas des indicateurs de gravité. EXT est
-  // vérifié avant VOL simple : priorité au cas le plus spécifique si jamais les
-  // 3 colonnes ne sont pas cohérentes entre elles (ex. AM=VOL, PM=EXT).
+  // Règle confirmée (nouvelle version) : vert par défaut ; rouge si "I" dans
+  // PTR ou AVQ (l'un ou l'autre, ou les deux) ; bleu si VOL présent dans
+  // AM/PM/VDN et pas d'EXT ; violet si VOL ET EXT présents (même si pas dans
+  // la même colonne, ex. AM=VOL, PM=EXT). Rouge reste prioritaire sur
+  // bleu/violet. Remplace l'ancienne règle où EXT seul (sans VOL associé)
+  // suffisait à colorer en violet -- un EXT isolé sans aucun VOL ne déclenche
+  // plus rien de spécial (vert) avec cette nouvelle définition. Le
+  // déclenchement par Plein="INC" a aussi été retiré (absent de l'énoncé de
+  // la nouvelle règle) -- à confirmer si c'était un oubli plutôt qu'un choix.
   function stateOf(a){
-    if (a.ptr === "I" || a.avq === "I" || a.plein === "INC") return "crit";
-    if (a.am === "EXT" || a.pm === "EXT" || a.vdn === "EXT") return "ext";
-    if (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL") return "info";
+    const hasI = (a.ptr === "I" || a.avq === "I");
+    if (hasI) return "crit";
+    const hasVol = (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL");
+    const hasExt = (a.am === "EXT" || a.pm === "EXT" || a.vdn === "EXT");
+    if (hasVol && hasExt) return "ext";
+    if (hasVol) return "info";
     return "ok";
   }
   // Couleur du plein (règle confirmée) : violet en vol extérieur ; bleu en vol ;
@@ -346,7 +353,7 @@
     if (a.plein && a.trg) return "warn";
     return "crit";
   }
-  const HEAD = ["Immat.", "Pos.", "Camp", "O2", "AM", "PM", "VDN", "PTR", "AVQ", "Gilet", "Plein", "Observations"];
+  const HEAD = ["Immat", "Pos", "Camp", "O2", "AM", "PM", "VDN", "PTR", "AVQ", "Gilet", "Plein", "Observations"];
   // Règle confirmée : "X" -> rouge ; "O2" (texte) -> orange ; sinon rien.
   function o2Cell(a){
     const raw = (a.o2 || "").trim().toUpperCase();
@@ -415,7 +422,7 @@
   // Construit tout l'affichage (tableau + plan) à partir des données -- appelée au
   // chargement initial ET à chaque rafraîchissement (voir refreshData), pour ne
   // jamais recharger la page entière (évite le flash toutes les 5s).
-  function render(AIRCRAFT, KANNAD_DATE){
+  function render(AIRCRAFT, KANNAD_DATE, HORS_LIGNE){
     document.querySelector(".kannad-pill .val").textContent = KANNAD_DATE;
 
     // Un avion masqué (Masquer = "x" sur Situation) sort du tableau, mais reste
@@ -521,6 +528,25 @@
       lowerSlots += lineSlot(cx, (spineY + xRowBotY) / 2, "X" + (i + 1), occByStand["X|" + (i + 1)]);
     }
 
+    // ---- avions hors ligne (Paramètre!B59:C78, Tableau11) ----
+    // Avions suivis hors de la voie/des hangars -- liste simple (pas de
+    // coordonnées réelles connues pour "B6", "C1" etc., qui ne sont pas les
+    // mêmes emplacements que les postes internes des hangars B/C/D malgré la
+    // lettre commune) dans l'espace resté libre sous les postes X1-X6, à
+    // gauche du hangar A. Grandit vers le bas avec le nombre d'avions hors
+    // ligne -- reste dans le cadre tant qu'il n'y en a pas plus d'une dizaine
+    // environ (au-delà, ça peut déborder sous le plan : à surveiller en usage
+    // réel, je n'ai pas de volume type pour calibrer une limite précise).
+    let horsLigneHtml = "";
+    if (HORS_LIGNE && HORS_LIGNE.length){
+      const hlX = 15, hlY = 295, lineH = 15;
+      horsLigneHtml += `<text class="hors-ligne-title" x="${hlX}" y="${hlY}">Hors ligne</text>`;
+      HORS_LIGNE.forEach((h, idx) => {
+        const ly = hlY + 18 + idx * lineH;
+        horsLigneHtml += `<text class="lavage-label" x="${hlX}" y="${ly}">${h.pos} : ${h.num}</text>`;
+      });
+    }
+
     // ---- case Lavage ----
     // Remontée en haut à droite, au même niveau que le titre du plan : sa place
     // d'origine (à droite de la voie en peigne) est prise par le décalage des
@@ -541,7 +567,7 @@
     // la grille en dessous. C/D gardent leur grille (gy0/gh) et leur "1" posé
     // normalement dans la grille comme avant -- seul le contour change, la
     // position et la numérotation des emplacements ne bougent pas.
-    const podY = 255, podH = 165;
+    const podY = 225, podH = 165;
     // A.x = cx du poste 13 (combX0 + 6*standW + standW/2) -- calage confirmé.
     const PODS = [
       {id:"A", x:327, y:podY, w:175, h:podH, shape:"apex", peakSlot:true,
@@ -593,6 +619,7 @@
       <g>${alignMarker}</g>
       <g>${lowerLines}</g>
       <g>${lowerSlots}</g>
+      <g>${horsLigneHtml}</g>
       <g>${lavageHtml}</g>
       <g>${podsHtml}</g>
     </svg>`;
@@ -634,8 +661,9 @@
   /*DATA_START*/
   const AIRCRAFT = __AIRCRAFT_DATA__;
   const KANNAD_DATE = "__KANNAD_DATE__";
+  const HORS_LIGNE = __HORS_LIGNE_DATA__;
   /*DATA_END*/
-  render(AIRCRAFT, KANNAD_DATE);
+  render(AIRCRAFT, KANNAD_DATE, HORS_LIGNE);
 
   function tick(){
     // Heure UTC (le "Z" affiché est le vrai suffixe Zulu, pas juste un libellé).
@@ -672,8 +700,8 @@
       const text = await res.text();
       const m = text.match(/\/\*DATA_START\*\/([\s\S]*?)\/\*DATA_END\*\//);
       if (!m) throw new Error("marqueurs introuvables");
-      const scope = Function(m[1] + "\nreturn {AIRCRAFT, KANNAD_DATE};")();
-      render(scope.AIRCRAFT, scope.KANNAD_DATE);
+      const scope = Function(m[1] + "\nreturn {AIRCRAFT, KANNAD_DATE, HORS_LIGNE};")();
+      render(scope.AIRCRAFT, scope.KANNAD_DATE, scope.HORS_LIGNE);
     } catch (e){
       // Repli : si le fetch local échoue (accès fichier bloqué, fichier en cours
       // d'écriture...), on retombe sur un rechargement complet plutôt que de rester

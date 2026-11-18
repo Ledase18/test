@@ -1,15 +1,19 @@
-# Export de la colonne Gilet — VBA à coller dans `GenererHTMLSituation`
+# Export de la colonne Gilet et des avions hors ligne — VBA à coller dans `GenererHTMLSituation`
 
 Contexte : le template HTML affiche maintenant une colonne **Gilet**, construite à partir de
 deux colonnes déjà présentes dans `Situation!P7:Q31` (confirmées en inspectant directement le
-fichier `piste - V4.xlsm` que tu as envoyé) :
+fichier `piste - V4.xlsm` que tu as envoyé), et une liste **Avions hors ligne** sur le plan,
+construite à partir de `Paramètre!B59:C78` (`Tableau11`, confirmé dans le même fichier) :
 
 - **P = GILETS** : taille affectée (liste déroulante `Paramètre!H46:H115`, ex. `"+2 M-W"`,
   `"-3 A"`...). Texte libre selon la liste, affiché tel quel dans le tableau HTML.
 - **Q = V** : validation (liste déroulante `Paramètre!F46:F48`, valeurs `"X"` ou `"V"`).
+- **Paramètre!B59:C78** : colonne B = position (`"B6"`, `"C1"`...), colonne C = numéro d'avion
+  (ex. `96`, correspond à `Num` dans `Tableau3`/`Num_Avion`). Seules les lignes où C est rempli
+  sont exportées.
 
-Règle de couleur reprise **telle quelle de la mise en forme conditionnelle du fichier Excel**
-(`Situation!P7:Q31`, dxfId 8/9/10) :
+Règle de couleur Gilet reprise **telle quelle de la mise en forme conditionnelle du fichier
+Excel** (`Situation!P7:Q31`, dxfId 8/9/10) :
 - `Q = "X"` → rouge (dxfId 10, `FFFF0000`)
 - `Q = "V"` → vert (dxfId 8, `FF33CC33`)
 - `P` renseigné mais `Q` ni `"X"` ni `"V"` → orange (dxfId 9, `FFFF9900`)
@@ -19,8 +23,8 @@ Règle de couleur reprise **telle quelle de la mise en forme conditionnelle du f
 
 ## `GenererHTMLSituation` (Module1) — à coller
 
-D'après le code que tu as envoyé, voici le `Sub` complet avec les deux colonnes ajoutées
-(déclarations, lecture, et injection dans `item`) :
+D'après le code que tu as envoyé, voici le `Sub` complet avec Gilet et les avions hors ligne
+ajoutés :
 
 ```vba
 Sub GenererHTMLSituation()
@@ -86,6 +90,37 @@ Sub GenererHTMLSituation()
         aircraftJs = aircraftJs & "  ]"
     End If
 
+    ' Avions hors ligne (Paramètre!B59:C78, Tableau11) -- affichés dans une
+    ' liste à part sur le plan, pas sur la voie/les hangars.
+    Dim wsParam As Worksheet
+    Set wsParam = ThisWorkbook.Sheets("Paramètre")
+    Dim hlPos As String, hlNum As String
+    Dim hlArr(0 To 19) As String
+    Dim hn As Long
+    hn = 0
+    For r = 59 To 78
+        hlNum = CellStr(wsParam.Cells(r, "C"))
+        If hlNum <> "" Then
+            hlPos = CellStr(wsParam.Cells(r, "B"))
+            hlArr(hn) = "    {pos:" & JsStr(hlPos) & ", num:" & JsStr(hlNum) & "}"
+            hn = hn + 1
+        End If
+    Next r
+
+    Dim horsLigneJs As String
+    Dim hi As Long
+    If hn = 0 Then
+        horsLigneJs = "[]"
+    Else
+        horsLigneJs = "[" & vbCrLf
+        For hi = 0 To hn - 1
+            horsLigneJs = horsLigneJs & hlArr(hi)
+            If hi < hn - 1 Then horsLigneJs = horsLigneJs & ","
+            horsLigneJs = horsLigneJs & vbCrLf
+        Next hi
+        horsLigneJs = horsLigneJs & "  ]"
+    End If
+
     Dim kannadStr As String
     If IsDate(ws.Range("V23").Value) Then
         kannadStr = Format(ws.Range("V23").Value, "dd/mm/yyyy")
@@ -117,6 +152,7 @@ Sub GenererHTMLSituation()
 
     html = Replace(html, "__AIRCRAFT_DATA__", aircraftJs)
     html = Replace(html, "__KANNAD_DATE__", kannadStr)
+    html = Replace(html, "__HORS_LIGNE_DATA__", horsLigneJs)
 
     Dim streamOut As Object
     Set streamOut = CreateObject("ADODB.Stream")
@@ -134,6 +170,12 @@ ErrHandler:
 End Sub
 ```
 
-Seuls changements par rapport à ta version : la ligne `Dim gilet As String, giletv As String`, les deux
-lectures `gilet = CellStr(ws.Cells(r, "P"))` / `giletv = CellStr(ws.Cells(r, "Q"))`, et leur
-injection dans `item` juste après `avq`. Tout le reste est identique à ce que tu as envoyé.
+Changements par rapport à ta version :
+- `Dim gilet As String, giletv As String` + les deux lectures `gilet = CellStr(ws.Cells(r, "P"))`
+  / `giletv = CellStr(ws.Cells(r, "Q"))` + leur injection dans `item` juste après `avq`.
+- Le bloc "Avions hors ligne" entier (nouveau), juste après le calcul de `aircraftJs`.
+- `html = Replace(html, "__HORS_LIGNE_DATA__", horsLigneJs)`, ajouté à la suite des deux
+  `Replace` déjà présents.
+
+Tout le reste est identique à ce que tu as envoyé.
+
