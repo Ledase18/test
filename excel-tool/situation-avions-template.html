@@ -367,14 +367,32 @@
   }
   // AM/PM/VDN affichés séparément (plus de colonne "Prog." fusionnée) --
   // même règle de couleur que précédemment, appliquée à chaque colonne pour
-  // sa propre valeur : "EXT" -> violet, "VOL" -> bleu, sinon texte brut
-  // (ex. "PPV1", "APV SPARE", "MTN"...), tiret si vide.
-  function progCell(val){
+  // sa propre valeur : "EXT" -> violet, "VOL" -> bleu, tiret si vide. PPV/
+  // PPVx/APV/APVx/APDV (programme de vol prévu) -> orange tant que PTR et
+  // AVQ ne sont pas tous les deux "complets", blanc (texte brut) dès qu'ils
+  // le sont -- voir trigComplete() ci-dessous. Sinon texte brut (MTN...).
+  function progCell(val, a){
     if (!val) return `<span class="txt-neutral">&mdash;</span>`;
     const v = val.trim().toUpperCase();
     if (v === "EXT") return `<span class="txt-ext">${val}</span>`;
     if (v === "VOL") return `<span class="txt-info">${val}</span>`;
+    if ((v.startsWith("PPV") || v.startsWith("APV") || v === "APDV") && !trigComplete(a)){
+      return `<span class="txt-warn">${val}</span>`;
+    }
     return val;
+  }
+  // Un "trigramme" = exactement 3 caractères une fois les espaces retirés
+  // (ex. "ODI" valide, "O I" invalide -- 2 caractères une fois l'espace
+  // retiré). "Complet" = PTR et AVQ sont tous les deux des trigrammes, ou
+  // l'un est un trigramme et l'autre vaut "OK".
+  function isTrigram(v){
+    return ((v || "").replace(/\s+/g, "")).length === 3;
+  }
+  function trigComplete(a){
+    const ptrTri = isTrigram(a.ptr), avqTri = isTrigram(a.avq);
+    const ptrOk = (a.ptr || "").trim().toUpperCase() === "OK";
+    const avqOk = (a.avq || "").trim().toUpperCase() === "OK";
+    return (ptrTri && avqTri) || (ptrTri && avqOk) || (avqTri && ptrOk);
   }
   // Règle confirmée à partir de la mise en forme conditionnelle du fichier Excel
   // (Situation!P7:Q31, dxfId 8/9/10) : colonne Gilet (taille, ex. "+2 M-W") +
@@ -454,9 +472,9 @@
         cell("", a.pos ? `<span class="bt-pos">${a.pos}</span>` : "") +
         cell("center-cell", a.camp ? `<span class="txt-neutral">X</span>` : "") +
         cell("", o2Cell(a)) +
-        cell("wrap-cell", progCell(a.am)) +
-        cell("wrap-cell", progCell(a.pm)) +
-        cell("wrap-cell", progCell(a.vdn)) +
+        cell("wrap-cell", progCell(a.am, a)) +
+        cell("wrap-cell", progCell(a.pm, a)) +
+        cell("wrap-cell", progCell(a.vdn, a)) +
         cell("", a.ptr ? `<span class="${a.ptr === "I" ? "txt-crit" : "txt-neutral"}">${a.ptr}</span>` : "") +
         cell("", a.avq ? `<span class="${a.avq === "I" ? "txt-crit" : "txt-neutral"}">${a.avq}</span>` : "") +
         cell("wrap-cell", a.gilet ? `<span class="${gc ? "txt-"+gc : ""}">${a.gilet}</span>` : "") +
