@@ -156,7 +156,7 @@
   /* ---------- aircraft board (façon panneau d'affichage aéroport) ---------- */
   .board-table{
     display:grid;
-    grid-template-columns: 90px 46px 44px 50px 64px 46px 46px 78px 1fr;
+    grid-template-columns: 76px 40px 34px 38px 46px 46px 46px 38px 38px 46px 58px 1fr;
     margin:0 14px 14px;
     border:1px solid var(--line);
     border-radius:10px;
@@ -196,6 +196,13 @@
     white-space:normal;
     color:var(--ink);
   }
+  .bt-cell.wrap-cell{
+    font-size:10.5px;
+    line-height:1.15;
+    white-space:normal;
+    text-align:center;
+    justify-content:center;
+  }
   .bt-cell.tail-cell{
     font-family:var(--font-display);
     font-weight:800;
@@ -222,9 +229,10 @@
   .txt-neutral{color:var(--muted)}
 
   @media (max-width:640px){
-    .board-table{grid-template-columns: 78px 40px 36px 42px 54px 38px 38px 64px 1fr}
+    .board-table{grid-template-columns: 64px 34px 28px 32px 38px 38px 38px 32px 32px 38px 48px 1fr}
     .bt-cell{font-size:12.5px; padding:5px 8px}
     .bt-cell.tail-cell{font-size:16px}
+    .bt-cell.wrap-cell{font-size:9.5px}
   }
 
   /* ---------- plan de stationnement ---------- */
@@ -297,7 +305,7 @@
   </div>
 
   <div class="legend">
-    <span class="legend-item"><span class="dot crit"></span>Indispo / incomplet</span>
+    <span class="legend-item"><span class="dot crit"></span>Indispo</span>
     <span class="legend-item"><span class="dot info"></span>Vol</span>
     <span class="legend-item"><span class="dot purple"></span>Vol extérieur</span>
     <span class="legend-item"><span class="dot ok"></span>Prêt</span>
@@ -334,13 +342,37 @@
     if (a.plein && a.trg) return "warn";
     return "crit";
   }
-  const HEAD = ["Immat.", "Pos.", "Camp", "O2", "Prog.", "PTR", "AVQ", "Plein", "Observations"];
+  const HEAD = ["Immat.", "Pos.", "Camp", "O2", "AM", "PM", "VDN", "PTR", "AVQ", "Gilet", "Plein", "Observations"];
   // Règle confirmée : "X" -> rouge ; "O2" (texte) -> orange ; sinon rien.
   function o2Cell(a){
     const raw = (a.o2 || "").trim().toUpperCase();
     if (raw === "X") return `<span class="txt-crit">X</span>`;
     if (raw === "O2") return `<span class="txt-warn">O2</span>`;
     return "";
+  }
+  // AM/PM/VDN affichés séparément (plus de colonne "Prog." fusionnée) --
+  // même règle de couleur que précédemment, appliquée à chaque colonne pour
+  // sa propre valeur : "EXT" -> violet, "VOL" -> bleu, sinon texte brut
+  // (ex. "PPV1", "APV SPARE", "MTN"...), tiret si vide.
+  function progCell(val){
+    if (!val) return `<span class="txt-neutral">&mdash;</span>`;
+    const v = val.trim().toUpperCase();
+    if (v === "EXT") return `<span class="txt-ext">${val}</span>`;
+    if (v === "VOL") return `<span class="txt-info">${val}</span>`;
+    return val;
+  }
+  // Règle confirmée à partir de la mise en forme conditionnelle du fichier Excel
+  // (Situation!P7:Q31, dxfId 8/9/10) : colonne Gilet (taille, ex. "+2 M-W") +
+  // colonne V cachée à côté (validation, "X" ou "V") -- "X" -> rouge, "V" ->
+  // vert, une taille saisie mais pas encore validée -> orange, rien saisi ->
+  // pas de couleur (contrairement au Plein, qui est rouge par défaut -- rien
+  // dans le fichier Excel n'indique que Gilet doive suivre la même exception).
+  function giletColor(a){
+    const v = (a.giletv || "").trim().toUpperCase();
+    if (v === "X") return "crit";
+    if (v === "V") return "ok";
+    if (a.gilet) return "warn";
+    return null;
   }
 
   function normPos(pos){
@@ -392,21 +424,19 @@
       const st = stateOf(a);
       const parity = i % 2 === 0 ? "row-odd" : "row-even";
       const cell = (cls, content) => `<div class="bt-cell ${parity} ${cls || ""}">${content}</div>`;
-
-      const prog = (a.am === "EXT" || a.pm === "EXT" || a.vdn === "EXT")
-        ? `<span class="txt-ext">EXT</span>`
-        : (a.am === "VOL" || a.pm === "VOL" || a.vdn === "VOL")
-        ? `<span class="txt-info">VOL</span>`
-        : (a.am || a.pm || a.vdn || `<span class="txt-neutral">&mdash;</span>`);
+      const gc = giletColor(a);
 
       return (
         cell(`tail-cell txt-${st}`, a.tail) +
         cell("", a.pos ? `<span class="bt-pos">${a.pos}</span>` : "") +
         cell("", a.camp ? `<span class="txt-neutral">X</span>` : "") +
         cell("", o2Cell(a)) +
-        cell("", prog) +
+        cell("wrap-cell", progCell(a.am)) +
+        cell("wrap-cell", progCell(a.pm)) +
+        cell("wrap-cell", progCell(a.vdn)) +
         cell("", a.ptr ? `<span class="${a.ptr === "I" ? "txt-crit" : "txt-neutral"}">${a.ptr}</span>` : "") +
         cell("", a.avq ? `<span class="${a.avq === "I" ? "txt-crit" : "txt-neutral"}">${a.avq}</span>` : "") +
+        cell("wrap-cell", a.gilet ? `<span class="${gc ? "txt-"+gc : ""}">${a.gilet}</span>` : "") +
         cell("", a.plein ? `<span class="txt-${pleinColor(a)}">${a.plein}</span>` : "") +
         cell("obs-cell", a.obs || "")
       );
@@ -465,6 +495,22 @@
     if (alignMarkerX !== null){
       const my = spineY + 8;
       alignMarker = `<path class="align-marker" d="M${alignMarkerX},${my} L${alignMarkerX-7},${my+12} L${alignMarkerX+7},${my+12} Z"/>`;
+    }
+
+    // ---- anciens postes 1-6 (ceux retirés en même temps que la numérotation
+    // 7-22 a été croquée verticalement) -- remis en face des nouveaux postes 1
+    // à 6 de la voie principale, sous forme d'une petite rangée secondaire.
+    // Renommés X1-X6 pour ne pas les confondre avec la numérotation 1-16 de la
+    // voie principale -- ce sont des emplacements distincts, pas des doublons.
+    // Même convention que les autres postes : normPos("X1") -> {zone:"X",
+    // num:"1"}, donc occByStand["X|1"]..["X|6"], sans traitement spécial.
+    const lowerBotY = spineY + 62;
+    let lowerLines = `<line class="diagram-line" x1="${combX0}" y1="${lowerBotY}" x2="${combX0 + 6*standW}" y2="${lowerBotY}"/>`;
+    let lowerSlots = "";
+    for (let i = 0; i < 6; i++){
+      const cx = combX0 + i * standW + standW / 2;
+      lowerLines += `<line class="diagram-line" x1="${cx}" y1="${spineY}" x2="${cx}" y2="${lowerBotY}"/>`;
+      lowerSlots += lineSlot(cx, (spineY + lowerBotY) / 2, "X" + (i + 1), occByStand["X|" + (i + 1)]);
     }
 
     // ---- case Lavage ----
@@ -529,6 +575,8 @@
       <g>${combLines}</g>
       <g>${combSlots}</g>
       <g>${alignMarker}</g>
+      <g>${lowerLines}</g>
+      <g>${lowerSlots}</g>
       <g>${lavageHtml}</g>
       <g>${podsHtml}</g>
     </svg>`;
